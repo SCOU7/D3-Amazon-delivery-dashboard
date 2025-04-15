@@ -2,43 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Amazon Last Mile Dashboard</title>
+  <title>Amazon Last Mile Dashboard - Milestone #1</title>
+  <!-- Link to CSS -->
+  <link rel="stylesheet" href="styles.css">
   <!-- Load D3 (v7) -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="dashboard">
-    <h1>Amazon Last Mile Dashboard</h1>
+  <!-- =========================
+       TOP 25%: Monitor Section
+       ========================= -->
+  <div id="monitorContainer">
+    <h2>Monitor Section (Top 25%)</h2>
 
-    <!-- Aggregate statistics across all 17 stations -->
-    <div id="aggregate-stats">
-      <p>Loading aggregate stats...</p>
+    <div id="pieChartsContainer">
+      <div id="pieChartLevel1" class="pie-chart-placeholder">
+        <p>Pie Chart Level 1</p>
+      </div>
+      <div id="pieChartLevel2" class="pie-chart-placeholder">
+        <p>Pie Chart Level 2</p>
+      </div>
+      <div id="pieChartLevel3" class="pie-chart-placeholder">
+        <p>Pie Chart Level 3</p>
+      </div>
     </div>
 
-    <!-- Control Panel for Station and Route Selection -->
-    <div id="control-panel">
-      <label for="stationSelect">Select Station:</label>
-      <select id="stationSelect">
-        <option value="">--Select a Station--</option>
-      </select>
-      <div id="station-route-count"></div>
-      
-      <label for="routeSelect">Select Route:</label>
-      <select id="routeSelect">
-        <option value="">--Select a Route--</option>
-      </select>
+    <div id="scatterPlot" class="scatter-plot-placeholder">
+      <p>Scatter Plot</p>
     </div>
-
-    <!-- Container for the Stops table -->
-    <div id="stop-list"></div>
-
-    <!-- Container for the Map Visualization -->
-    <div id="map"></div>
   </div>
 
-  <!-- Load the JavaScript modules -->
-  <script src="scripts/controlPanel.js"></script>
-  <script src="scripts/mapVisualization.js"></script>
+  <!-- =======================
+       BOTTOM 75%: Map Section
+       ======================= -->
+  <div id="mapContainer">
+    <!-- A simple placeholder for the Level Indicator -->
+    <div id="mapLevelIndicator">
+      <p>Current Level: <span id="currentLevelLabel">1 (Nation)</span></p>
+    </div>
+
+    <div id="leftSidebar" class="sidebar">
+      <h3>Map Monitor (Left Sidebar)</h3>
+      <p>Hover details go here</p>
+    </div>
+
+    <div id="mapViewport">
+      <h3>Main Map Viewport</h3>
+      <!-- We can add an SVG or Canvas for the map in a future milestone -->
+    </div>
+
+    <div id="rightSidebar" class="sidebar">
+      <h3>Filter (Right Sidebar)</h3>
+      <p>Filter controls go here</p>
+    </div>
+  </div>
+
+  <!-- Main JS -->
+  <script src="scripts/main.js"></script>
 </body>
 </html>
