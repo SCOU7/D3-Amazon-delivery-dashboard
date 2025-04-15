@@ -4,6 +4,15 @@ let mapSvg = null;
 let projection = null;
 
 /**
+ * showMapMonitorInfo(htmlString):
+ * Replaces the content of #mapMonitorContent in the left sidebar
+ * with the provided HTML string.
+ */
+function showMapMonitorInfo(htmlString) {
+  d3.select("#mapMonitorContent").html(htmlString);
+}
+
+/**
  * initMap():
  * - Clears any existing SVG in #mapViewport
  * - Creates a new <svg> for the map
@@ -34,13 +43,12 @@ function initMap() {
   }
   else if (appState.currentLevel === 2) {
     // Level 2: Station
-    // Fit the bounding box of the selected station's stops
     fitMapToStationStops(width, height);
     renderLevel2StationRoutes();
   }
   else if (appState.currentLevel === 3) {
-    // Level 3: Route-level (Not yet implemented in this example)
-    // In the future, we'll fit bounding box of the selected route's stops, etc.
+    // Level 3: Route-level
+    renderLevel3Route();
   }
 }
 
@@ -69,8 +77,16 @@ function renderLevel1Stations() {
     .attr("stroke", "#333")
     .attr("stroke-width", 1)
     .on("mouseover", (event, d) => {
-      // Minimal logging; remove if data is large
-      console.log(`Hovered station: ${d.station_code} (Routes: ${d.total_routes})`);
+      // Show station details in the Map Monitor
+      const infoHtml = `
+        <p><strong>Station: ${d.station_code}</strong></p>
+        <p>Total Routes: ${d.total_routes}</p>
+      `;
+      showMapMonitorInfo(infoHtml);
+    })
+    .on("mouseout", () => {
+      // Reset sidebar content
+      showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
     })
     .on("click", (event, d) => {
       // Move to station level
@@ -86,7 +102,6 @@ function renderLevel1Stations() {
  * - Switches to Level 2 and re-initializes the map
  */
 async function handleStationClick(stationCode) {
-  console.log(`Station ${stationCode} clicked. Transitioning to Level 2...`);
   clearStationData(); // function from stateManager.js
 
   const stationObj = appState.stationData[stationCode];
@@ -100,13 +115,6 @@ async function handleStationClick(stationCode) {
   appState.stationRoutes = stationObj.routes;
   appState.stationStops = stationObj.stops;
   appState.stationSequences = stationObj.sequences;
-
-  // (Optional) Pre-sort stationSequences if you want them sorted up front
-  // appState.stationSequences.sort((a,b) => {
-  //   // If route_id differs, compare them. Otherwise compare sequence_order
-  //   const routeCmp = d3.ascending(a.route_id, b.route_id);
-  //   return routeCmp !== 0 ? routeCmp : d3.ascending(a.sequence_order, b.sequence_order);
-  // });
 
   // Switch to Level 2
   setLevel(2);
@@ -173,10 +181,10 @@ function renderLevel2StationRoutes() {
 
   // Group sequences by route_id
   const seqByRoute = d3.group(stationSequences, d => d.route_id);
-
   const routesGroup = mapSvg.append("g").attr("class", "routes-group");
 
   for (const [route_id, seqArray] of seqByRoute.entries()) {
+    // Sort stops by sequence_order
     seqArray.sort((a,b) => d3.ascending(a.sequence_order, b.sequence_order));
 
     const stopsForRoute = seqArray.map(seq => {
@@ -185,20 +193,30 @@ function renderLevel2StationRoutes() {
 
     if (stopsForRoute.length < 2) continue;
 
+    // Convert each stop to projected coordinates
     const coords = stopsForRoute.map(s => projection([s.lng, s.lat]));
     const lineGenerator = d3.line();
 
+    // One <g> per route
     const routeGroup = routesGroup.append("g")
       .attr("class", "route-group")
       .on("mouseover", () => {
-        // minimal logging
+        // Show route info in the sidebar
+        const infoHtml = `
+          <p><strong>Route ID:</strong> ${route_id}</p>
+          <p>Stops in route: ${stopsForRoute.length}</p>
+        `;
+        showMapMonitorInfo(infoHtml);
+      })
+      .on("mouseout", () => {
+        showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
       })
       .on("click", () => {
-        // **When user clicks a route, go to handleRouteClick**
+        // When user clicks a route, transition to Level 3
         handleRouteClick(route_id);
       });
 
-    // First segment black, rest white...
+    // First segment black
     if (coords.length >= 2) {
       routeGroup.append("path")
         .datum(coords.slice(0,2))
@@ -207,6 +225,8 @@ function renderLevel2StationRoutes() {
         .attr("stroke", "black")
         .attr("stroke-width", 2);
     }
+
+    // Remaining segments white
     if (coords.length > 2) {
       routeGroup.append("path")
         .datum(coords.slice(1))
@@ -216,7 +236,7 @@ function renderLevel2StationRoutes() {
         .attr("stroke-width", 2);
     }
 
-    // draw red circles
+    // Draw red circles for each stop
     routeGroup.selectAll("circle.stop-point")
       .data(stopsForRoute)
       .enter()
@@ -225,7 +245,23 @@ function renderLevel2StationRoutes() {
       .attr("cx", d => projection([d.lng, d.lat])[0])
       .attr("cy", d => projection([d.lng, d.lat])[1])
       .attr("r", 3)
-      .attr("fill", "#f00");
+      .attr("fill", "#f00")
+      .on("mouseover", (event, d) => {
+        // Show stop details in the Map Monitor
+        const infoHtml = `
+          <p><strong>Stop ID:</strong> ${d.stop_id}</p>
+          <p>lat: ${d.lat.toFixed(4)}, lng: ${d.lng.toFixed(4)}</p>
+        `;
+        showMapMonitorInfo(infoHtml);
+      })
+      .on("mouseout", () => {
+        // Return to route-level hover info or default
+        const infoHtml = `
+          <p><strong>Route ID:</strong> ${route_id}</p>
+          <p>Stops in route: ${stopsForRoute.length}</p>
+        `;
+        showMapMonitorInfo(infoHtml);
+      });
   }
 }
 
@@ -237,9 +273,6 @@ function renderLevel2StationRoutes() {
  * - Switches to Level 3
  */
 async function handleRouteClick(route_id) {
-  console.log(`Route ${route_id} clicked, transitioning to Level 3...`);
-
-  // Clear old route data
   clearRouteData();
   appState.selectedRoute = route_id;
 
@@ -248,20 +281,10 @@ async function handleRouteClick(route_id) {
   appState.routeStops = routeStops;
 
   // 2) Optionally load route's packages if needed
-  // If you want a "no delay" approach, you can preload them just like we do for stops.
-  // Otherwise, let's do it on demand. We'll show an example:
+  //    (If you haven't preloaded them, do so here)
   let routePackages = [];
   try {
-    // We do have "packages.csv" for the station, so let's filter that
-    // or load the entire packages.csv and filter it.
-    // For brevity, let's assume we've preloaded stationPackages at startup. If not, you can do:
-    // const stationPackages = await loadStationPackages(appState.selectedStation);
-    // routePackages = stationPackages.filter(p => p.route_id === route_id);
-
-    // If you've already got stationPackages in appState, do:
-    // routePackages = appState.stationPackages.filter(p => p.route_id === route_id);
-
-    // For now, let's assume we skip or we have an empty array
+    // For brevity, assume an empty array or preloaded data
     routePackages = [];
   } catch (e) {
     console.warn("Could not load packages for route", route_id, e);
@@ -290,15 +313,12 @@ async function handleRouteClick(route_id) {
  * - Colors each stop by "average service time"
  */
 function renderLevel3Route() {
-  console.log("Rendering Level 3 route view");
   if (!mapSvg) return;
 
   // 1) Fit bounding box to all routeStops
   fitMapToRouteStops();
 
-  // 2) Build the actual ordered list of stops from appState.stationSequences?
-  // or we can do it again here.
-  // We'll re-group the sequences by route_id and pick the selectedRoute's array
+  // 2) Build the actual ordered list of stops from appState.stationSequences
   const seqArray = appState.stationSequences
     .filter(seq => seq.route_id === appState.selectedRoute)
     .sort((a,b) => d3.ascending(a.sequence_order, b.sequence_order));
@@ -308,21 +328,19 @@ function renderLevel3Route() {
     return;
   }
 
-  // Build a dictionary for quick (stop_id -> stop object)
+  // Dictionary for quick stop lookups
   const stopDict = {};
   for (const s of appState.routeStops) {
     stopDict[s.stop_id] = s;
   }
 
-  // We'll build a path array of consecutive stops
   const orderedStops = seqArray.map(seq => stopDict[seq.stop_id]).filter(d => d);
   if (orderedStops.length < 2) {
     console.warn("Not enough stops in route to draw path.");
     return;
   }
 
-  // 3) We'll create line segments between consecutive stops
-  // For each pair (i, i+1), compute ratio = travel_time / geodesic_distance
+  // 3) Draw line segments with color scale for traffic ratio
   const routeGroup = mapSvg.append("g")
     .attr("class", "level3-route");
 
@@ -330,20 +348,14 @@ function renderLevel3Route() {
     const fromStop = orderedStops[i];
     const toStop = orderedStops[i+1];
 
-    // look up travel time in appState.routeTravelTimes
     let travelTime = 0;
-    if (appState.routeTravelTimes && 
+    if (appState.routeTravelTimes &&
         appState.routeTravelTimes[fromStop.stop_id] &&
         appState.routeTravelTimes[fromStop.stop_id][toStop.stop_id] !== undefined) {
       travelTime = appState.routeTravelTimes[fromStop.stop_id][toStop.stop_id];
     }
-
-    // compute geodesic distance or approximate
     const dist = distanceBetweenStops(fromStop, toStop);
-
     const ratio = dist > 0 ? travelTime / dist : 0;
-
-    // color from green to red
     const linkColor = trafficColorScale(ratio);
 
     const lineGenerator = d3.line();
@@ -359,15 +371,22 @@ function renderLevel3Route() {
       .attr("stroke", linkColor)
       .attr("stroke-width", 3)
       .on("mouseover", () => {
-        // highlight or log details
-        console.log(`Hovered link from ${fromStop.stop_id} to ${toStop.stop_id}, 
-                     time=${travelTime}, dist=${dist}, ratio=${ratio}`);
+        const infoHtml = `
+          <p><strong>Link Info</strong></p>
+          <p>From Stop: ${fromStop.stop_id}</p>
+          <p>To Stop: ${toStop.stop_id}</p>
+          <p>Travel Time (sec): ${travelTime.toFixed(2)}</p>
+          <p>Distance (km): ${dist.toFixed(2)}</p>
+          <p>Ratio (sec/km): ${ratio.toFixed(2)}</p>
+        `;
+        showMapMonitorInfo(infoHtml);
+      })
+      .on("mouseout", () => {
+        showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
       });
   }
 
-  // 4) Draw each stop as a circle, color-coded by avg service time
-  // We'll compute average service time from appState.routePackages
-  // For each stop, gather packages, average planned_service_time_seconds
+  // 4) Draw each stop with color-coded average service time
   const packagesByStop = d3.group(appState.routePackages, p => p.stop_id);
 
   const nodeGroup = routeGroup.append("g")
@@ -387,7 +406,19 @@ function renderLevel3Route() {
       return serviceColorScale(avgService);
     })
     .on("mouseover", (event, d) => {
-      console.log(`Stop ${d.stop_id} hovered. lat=${d.lat}, lng=${d.lng}`);
+      const pkgs = packagesByStop.get(d.stop_id) || [];
+      const avgService = d3.mean(pkgs, p => +p.planned_service_time_seconds) || 0;
+
+      const infoHtml = `
+        <p><strong>Stop: ${d.stop_id}</strong></p>
+        <p>Coordinates: ${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</p>
+        <p>Avg Service (sec): ${avgService.toFixed(2)}</p>
+        <p>Package Count: ${pkgs.length}</p>
+      `;
+      showMapMonitorInfo(infoHtml);
+    })
+    .on("mouseout", () => {
+      showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
     });
 }
 
@@ -402,7 +433,6 @@ function fitMapToRouteStops() {
 
   const routeStops = appState.routeStops;
   if (!routeStops.length) {
-    // fallback
     projection = d3.geoMercator()
       .scale(700)
       .translate([width / 2, height / 2])
@@ -412,16 +442,10 @@ function fitMapToRouteStops() {
 
   const features = routeStops.map(s => ({
     type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: [s.lng, s.lat]
-    }
+    geometry: { type: "Point", coordinates: [s.lng, s.lat] }
   }));
 
-  const geojson = {
-    type: "FeatureCollection",
-    features
-  };
+  const geojson = { type: "FeatureCollection", features };
 
   projection = d3.geoMercator();
   projection.fitExtent([[20,20],[width-20, height-20]], geojson);
@@ -429,75 +453,44 @@ function fitMapToRouteStops() {
 
 /**
  * distanceBetweenStops(a, b):
- * For a rough approximation, we can do a basic Euclidean distance in lat/lng
- * or use a real geodesic formula. Here's a quick helper:
+ * For a rough approximation, we can do a basic Euclidean or Haversine formula.
  */
 function distanceBetweenStops(a, b) {
-  const R = 6371; // Earth's radius in km if you want a geodesic
-  // convert lat/lng to radians
+  const R = 6371; // Earth's radius in km
   const lat1 = a.lat * Math.PI/180, lat2 = b.lat * Math.PI/180;
   const dLat = (b.lat - a.lat) * Math.PI/180;
   const dLon = (b.lng - a.lng) * Math.PI/180;
 
-  // Haversine
   const sinDLat = Math.sin(dLat/2);
   const sinDLon = Math.sin(dLon/2);
-  const c = 2 * Math.asin( Math.sqrt( sinDLat*sinDLat +
-                Math.cos(lat1)*Math.cos(lat2)*sinDLon*sinDLon ) );
+  const c = 2 * Math.asin( Math.sqrt(
+    sinDLat*sinDLat +
+    Math.cos(lat1)*Math.cos(lat2)*sinDLon*sinDLon
+  ));
   const dist = R * c; // in km
-  // we can convert to meters if we want
-  return dist; // km
+  return dist;
 }
 
 /**
  * trafficColorScale(ratio):
  * ratio = (travel_time in seconds) / (distance in km)
  * For example, 300 seconds / 1 km = 300 sec/km
- * We can define an approximate domain, e.g.:
- *   0 -> green
- *   300 -> yellow
- *   600 -> red
+ * domain might be [0, 300, 600] => [green, yellow, red]
  */
 function trafficColorScale(ratio) {
-  // ratio in sec/km
-  // let's define an arbitrary scale:
   return d3.scaleLinear()
-    .domain([0, 300, 600]) // adjust as needed
+    .domain([0, 300, 600])
     .range(["green", "yellow", "red"])
     .clamp(true)(ratio);
 }
 
 /**
  * serviceColorScale(avgService):
- * e.g. domain = [0, 120, 300, ...]
+ * e.g. domain = [0, 60, 300] => [light, medium, dark]
  */
 function serviceColorScale(seconds) {
-  // You can define any color scale
   return d3.scaleLinear()
-    .domain([0, 60, 300]) // adjust as needed
+    .domain([0, 60, 300])
     .range(["#ccece6", "#66c2a4", "#238b45"])
     .clamp(true)(seconds);
-}
-
-// Now, in initMap(), when we see if (appState.currentLevel === 3), we call renderLevel3Route().
-function initMap() {
-  const mapContainer = d3.select("#mapViewport");
-  mapContainer.selectAll("svg").remove();
-
-  const width = mapContainer.node().clientWidth;
-  const height = mapContainer.node().clientHeight;
-
-  mapSvg = mapContainer.append("svg")
-    .attr("width", width)
-    .attr("height", height);
-
-  if (appState.currentLevel === 1) {
-    projection = d3.geoMercator().scale(700).translate([width/2,height/2]).center([-95, 40]);
-    renderLevel1Stations();
-  } else if (appState.currentLevel === 2) {
-    fitMapToStationStops(width, height);
-    renderLevel2StationRoutes();
-  } else if (appState.currentLevel === 3) {
-    renderLevel3Route();
-  }
 }

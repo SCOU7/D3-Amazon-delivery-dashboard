@@ -22,4 +22,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   catch (err) {
     console.error("Error during preloading:", err);
   }
+
+  // Add back-button logic
+  const backBtn = document.getElementById("backButton");
+  backBtn.addEventListener("click", () => {
+    handleBackNavigation();
+  });
 });

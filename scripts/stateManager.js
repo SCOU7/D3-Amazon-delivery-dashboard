@@ -43,3 +43,19 @@ function clearRouteData() {
   appState.routeStops = [];
   appState.routePackages = [];
 }
+
+function handleBackNavigation() {
+  if (appState.currentLevel === 3) {
+    // Going from Route-level to Station-level
+    clearRouteData();
+    setLevel(2);
+    initMap(); // re-draw station-level
+  } else if (appState.currentLevel === 2) {
+    // Going from Station-level to Nation-level
+    clearStationData();
+    setLevel(1);
+    initMap(); // re-draw nation-level
+  } else {
+    console.log("Already at Level 1; no further back to go.");
+  }
+}

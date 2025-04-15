@@ -128,3 +128,17 @@ html, body {
   stroke: yellow;
   stroke-width: 1px;
 }
+
+#mapMonitorContent {
+  margin-top: 10px;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+/* (optional) Some styling for the back button */
+#mapLevelIndicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Add a bit more space for the button if you want. */
+}
