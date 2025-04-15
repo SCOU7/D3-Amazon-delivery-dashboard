@@ -9,22 +9,35 @@
 </head>
 <body>
   <div id="dashboard">
-    <h1>Amazon Last Mile Dashboard - DAU1</h1>
-    <!-- Control Panel for Route Selection -->
+    <h1>Amazon Last Mile Dashboard</h1>
+
+    <!-- Aggregate statistics across all 17 stations -->
+    <div id="aggregate-stats">
+      <p>Loading aggregate stats...</p>
+    </div>
+
+    <!-- Control Panel for Station and Route Selection -->
     <div id="control-panel">
+      <label for="stationSelect">Select Station:</label>
+      <select id="stationSelect">
+        <option value="">--Select a Station--</option>
+      </select>
+      <div id="station-route-count"></div>
+      
       <label for="routeSelect">Select Route:</label>
       <select id="routeSelect">
         <option value="">--Select a Route--</option>
       </select>
     </div>
 
-    <!-- Container for Stop Details (table) -->
+    <!-- Container for the Stops table -->
     <div id="stop-list"></div>
 
-    <!-- Container for Map Visualization -->
+    <!-- Container for the Map Visualization -->
     <div id="map"></div>
   </div>
-  <!-- Link to the main JavaScript files -->
+
+  <!-- Load the JavaScript modules -->
   <script src="scripts/controlPanel.js"></script>
   <script src="scripts/mapVisualization.js"></script>
 </body>
