@@ -1,21 +1,25 @@
 // scripts/main.js
 
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Milestone #3: Station-level (Level 2) test started.");
+  console.log("Preloading all data for all stations...");
 
   try {
-    // 1) Load aggregated station data for Level 1
-    const stationAggregates = await loadAllStations();
-    appState.stations = stationAggregates;
+    // 1) Preload everything
+    const { stationAggregates, stationData } = await preloadAllData();
 
-    // 2) Set initial level to 1
+    // 2) Store them in state
+    appState.stations = stationAggregates;      // Level 1 aggregates
+    appState.stationData = stationData;         // Full details for each station
+
+    console.log("All station data preloaded. Found", appState.stations.length, "stations.");
+
+    // 3) Set initial level to 1 and init map
     setLevel(1);
-
-    // 3) Initialize the map
     initMap();
 
-    console.log("Milestone #3 loaded. Click on any station circle to transition to Level 2!");
-  } catch (err) {
-    console.error("Error in main.js:", err);
+    console.log("Click a station circle to jump to Level 2 instantly!");
+  }
+  catch (err) {
+    console.error("Error during preloading:", err);
   }
 });

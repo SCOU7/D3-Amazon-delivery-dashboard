@@ -1,7 +1,6 @@
 // scripts/dataLoader.js
 
-// You might store all station codes here or in stateManager.
-// We'll store them here for convenience.
+// Station codes defined as before
 const STATION_CODES = [
   "DAU1", "DBO1", "DBO2", "DBO3", "DCH1", "DCH2", "DCH3", "DCH4",
   "DLA3", "DLA4", "DLA5", "DLA7", "DLA8", "DLA9",
@@ -9,123 +8,95 @@ const STATION_CODES = [
 ];
 
 /**
- * loadAllStations()
- * For each station folder in STATION_CODES:
- *   1) Load routes.csv -> find total # of routes.
- *   2) Load stops.csv  -> compute average lat/lng as station "representative" location.
- * Returns an array of station objects:
- * [
- *   { station_code: "DAU1", lat: 30.3, lng: -97.9, total_routes: 205 },
- *   { station_code: "DBO1", lat: 29.7, lng: -98.2, total_routes: 160 },
- *   ...
- * ]
+ * preloadAllData():
+ *  1) For each station code, load routes.csv, stops.csv, actual_sequences.csv.
+ *  2) Compute:
+ *     - total_routes (simply routes.length)
+ *     - approximate lat/lng for station (average of stops, or find "Station" row)
+ *  3) Build two structures:
+ *     a) stationAggregates[] for Level 1, each with { station_code, lat, lng, total_routes }
+ *     b) stationData{} keyed by stationCode => { routes, stops, sequences, lat, lng, total_routes }
+ *
+ * Returns: { stationAggregates, stationData }
  */
-async function loadAllStations() {
-  const stationPromises = STATION_CODES.map(async stationCode => {
+async function preloadAllData() {
+  const stationData = {};       // dictionary: stationCode -> { routes, stops, sequences, lat, lng, total_routes }
+  const stationAggregates = []; // array: for Level 1 circles
+
+  // Process each station code in parallel
+  const allPromises = STATION_CODES.map(async (stationCode) => {
     try {
-      // 1) Load routes.csv to get total # routes
-      const routes = await d3.csv(`processed_data/${stationCode}/routes.csv`);
-      const totalRoutes = routes.length;
+      // Load all 3 CSVs in parallel
+      const [routes, stops, sequences] = await Promise.all([
+        d3.csv(`processed_data/${stationCode}/routes.csv`, r => ({
+          route_id: r.route_id,
+          station_code: r.station_code,
+          date: r.date,
+          departure_time_utc: r.departure_time_utc,
+          executor_capacity_cm3: +r.executor_capacity_cm3,
+          route_score: r.route_score
+        })),
+        d3.csv(`processed_data/${stationCode}/stops.csv`, s => ({
+          route_id: s.route_id,
+          stop_id: s.stop_id,
+          lat: +s.lat,
+          lng: +s.lng,
+          zone_id: s.zone_id,
+          type: s.type
+        })),
+        d3.csv(`processed_data/${stationCode}/actual_sequences.csv`, seq => ({
+          route_id: seq.route_id,
+          stop_id: seq.stop_id,
+          sequence_order: +seq.sequence_order
+        }))
+      ]);
 
-      // 2) Load stops.csv to compute average lat/lng
-      const stops = await d3.csv(`processed_data/${stationCode}/stops.csv`, d => {
-        // lat/lng are numeric
-        return {
-          route_id: d.route_id,
-          stop_id: d.stop_id,
-          lat: +d.lat,
-          lng: +d.lng,
-          zone_id: d.zone_id,
-          type: d.type
-        };
-      });
+      // total routes is simply the length of routes.csv
+      const total_routes = routes.length;
 
-      // If your dataset has a row with type = "Station", you might prefer to find that row:
-      // const stationRow = stops.find(s => s.type === "Station");
-      // let stationLat = stationRow ? stationRow.lat : ...
-      // let stationLng = stationRow ? stationRow.lng : ...
-      // 
-      // Otherwise, we take average of all stops:
+      // approximate station lat/lng by averaging all stops:
       let avgLat = 0, avgLng = 0;
-      stops.forEach(s => {
-        avgLat += s.lat;
-        avgLng += s.lng;
-      });
-      avgLat /= stops.length;
-      avgLng /= stops.length;
+      if (stops.length > 0) {
+        stops.forEach(st => {
+          avgLat += st.lat;
+          avgLng += st.lng;
+        });
+        avgLat /= stops.length;
+        avgLng /= stops.length;
+      } else {
+        // fallback
+        avgLat = 39; 
+        avgLng = -95; 
+      }
 
-      return {
+      // build stationData entry
+      stationData[stationCode] = {
+        routes,
+        stops,
+        sequences,
+        lat: avgLat,
+        lng: avgLng,
+        total_routes
+      };
+
+      // build a Level 1 aggregate record
+      stationAggregates.push({
         station_code: stationCode,
         lat: avgLat,
         lng: avgLng,
-        total_routes: totalRoutes
-      };
+        total_routes
+      });
     } catch (err) {
       console.error(`Error loading data for station ${stationCode}:`, err);
-      // Return null or some fallback
-      return null;
+      // We'll skip this station if there's an error
     }
   });
 
-  // Wait for all station data to load
-  const stationsArray = await Promise.all(stationPromises);
+  // Wait for all stations
+  await Promise.all(allPromises);
 
-  // Filter out any null returns (in case of an error)
-  const validStations = stationsArray.filter(d => d !== null);
-
-  return validStations;
-}
-
-/**
- * loadStationRoutes(stationCode):
- * Loads routes.csv for the specified station folder and returns an array of:
- * [
- *   { route_id, station_code, date, departure_time_utc, executor_capacity_cm3, route_score }
- * ]
- */
-async function loadStationRoutes(stationCode) {
-  const routes = await d3.csv(`processed_data/${stationCode}/routes.csv`, d => ({
-    route_id: d.route_id,
-    station_code: d.station_code,
-    date: d.date,
-    departure_time_utc: d.departure_time_utc,
-    executor_capacity_cm3: +d.executor_capacity_cm3,
-    route_score: d.route_score
-  }));
-  return routes;
-}
-
-/**
- * loadStationStops(stationCode):
- * Loads stops.csv for the station folder and returns an array of:
- * [
- *   { route_id, stop_id, lat, lng, zone_id, type }
- * ]
- */
-async function loadStationStops(stationCode) {
-  const stops = await d3.csv(`processed_data/${stationCode}/stops.csv`, d => ({
-    route_id: d.route_id,
-    stop_id: d.stop_id,
-    lat: +d.lat,
-    lng: +d.lng,
-    zone_id: d.zone_id,
-    type: d.type
-  }));
-  return stops;
-}
-
-/**
- * loadStationSequences(stationCode):
- * Loads actual_sequences.csv for the station folder and returns an array of:
- * [
- *   { route_id, stop_id, sequence_order }
- * ]
- */
-async function loadStationSequences(stationCode) {
-  const sequences = await d3.csv(`processed_data/${stationCode}/actual_sequences.csv`, d => ({
-    route_id: d.route_id,
-    stop_id: d.stop_id,
-    sequence_order: +d.sequence_order
-  }));
-  return sequences;
+  return {
+    stationAggregates,
+    stationData
+  };
 }
