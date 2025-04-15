@@ -276,34 +276,27 @@ async function handleRouteClick(route_id) {
   clearRouteData();
   appState.selectedRoute = route_id;
 
-  // 1) Build routeStops array from appState.stationStops
+  // 1) Build routeStops array
   const routeStops = appState.stationStops.filter(s => s.route_id === route_id);
   appState.routeStops = routeStops;
 
-  // 2) Optionally load route's packages if needed
-  //    (If you haven't preloaded them, do so here)
-  let routePackages = [];
-  try {
-    // For brevity, assume an empty array or preloaded data
-    routePackages = [];
-  } catch (e) {
-    console.warn("Could not load packages for route", route_id, e);
-  }
+  // 2) Load packages for this route
+  const allPackages = appState.stationData[appState.selectedStation].packages || [];
+  const routePackages = allPackages.filter(p => p.route_id === route_id);
   appState.routePackages = routePackages;
 
-  // 3) Load route travel_times
-  let travelTimes = null;
+  // 3) Load travel times
   try {
-    travelTimes = await loadRouteTravelTimes(appState.selectedStation, route_id);
+    const travelTimes = await loadRouteTravelTimes(appState.selectedStation, route_id);
     appState.routeTravelTimes = travelTimes;
   } catch (err) {
     console.error("Error loading route travel times:", err);
     appState.routeTravelTimes = null;
   }
 
-  // 4) setLevel(3) & re-init map
+  // 4) Switch to Level 3 and re-render
   setLevel(3);
-  initMap(); // calls renderLevel3Route()
+  initMap();
 }
 
 /**
