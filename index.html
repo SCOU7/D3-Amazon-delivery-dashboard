@@ -1,62 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Delivery Route Dashboard</title>
-
-  <!-- D3.js CDN -->
+  <meta charset="UTF-8">
+  <title>Amazon Last Mile Dashboard</title>
+  <!-- Load D3 (v7) -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
-
-  <!-- Styles -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background-color: #1a73e8;
-      color: white;
-      padding: 1.5rem;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    main {
-      padding: 2rem;
-      text-align: center;
-    }
-
-    .chart {
-      margin-top: 3rem;
-    }
-
-    footer {
-      margin-top: 4rem;
-      font-size: 0.8rem;
-      color: #777;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-  <header>
-    <h1>📦 Delivery Route Dashboard</h1>
-    <p>Visualizing bottlenecks in last-mile logistics</p>
-  </header>
-
-  <main>
-    <p>This is a prototype D3.js dashboard using GitHub Pages.</p>
-    <div id="chart" class="chart">
-      <!-- D3 chart will be injected here -->
+  <div id="dashboard">
+    <h1>Amazon Last Mile Dashboard - DAU1</h1>
+    <!-- Control Panel for Route Selection -->
+    <div id="control-panel">
+      <label for="routeSelect">Select Route:</label>
+      <select id="routeSelect">
+        <option value="">--Select a Route--</option>
+      </select>
     </div>
-    <footer>© 2025 Taehwan Park</footer>
-  </main>
-
-  <!-- Your script -->
-  <script src="script.js"></script>
+    <!-- Container for Stop Details -->
+    <div id="stop-list">
+      <!-- The stops table will be injected here -->
+    </div>
+  </div>
+  <!-- Link to the main JavaScript file -->
+  <script src="scripts/controlPanel.js"></script>
 </body>
 </html>
