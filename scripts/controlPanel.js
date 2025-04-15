@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const routeSelect = d3.select("#routeSelect");
 
   // Load routes.csv and populate the select menu
-  d3.csv("preprocessed_data/DAU1/routes.csv")
+  d3.csv("processed_data/DAU1/routes.csv")
     .then(function (routes) {
       routes.forEach(function (route) {
         routeSelect.append("option")
@@ -25,10 +25,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Load all required CSVs
     Promise.all([
-      d3.csv("preprocessed_data/DAU1/stops.csv"),
-      d3.csv("preprocessed_data/DAU1/packages.csv"),
-      d3.csv("preprocessed_data/DAU1/actual_sequences.csv"),
-      d3.csv(`preprocessed_data/DAU1/travel_times/${selectedRoute}_travel_times.csv`)
+      d3.csv("processed_data/DAU1/stops.csv"),
+      d3.csv("processed_data/DAU1/packages.csv"),
+      d3.csv("processed_data/DAU1/actual_sequences.csv"),
+      d3.csv(`processed_data/DAU1/travel_times/${selectedRoute}_travel_times.csv`)
     ])
       .then(function ([stopsData, packagesData, sequenceData, travelTimesData]) {
         // Filter relevant stops
