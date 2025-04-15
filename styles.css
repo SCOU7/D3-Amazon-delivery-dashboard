@@ -112,3 +112,19 @@ html, body {
   margin-top: 20px;
   color: #333;
 }
+
+/* scripts/mapManager draws route lines. We can style them with classes if you like. */
+.route-group path {
+  cursor: pointer;
+  opacity: 0.9;
+}
+.route-group:hover path {
+  opacity: 1.0;
+}
+.stop-point {
+  cursor: pointer;
+}
+.stop-point:hover {
+  stroke: yellow;
+  stroke-width: 1px;
+}

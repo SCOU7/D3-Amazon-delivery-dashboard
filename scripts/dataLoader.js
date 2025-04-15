@@ -75,3 +75,57 @@ async function loadAllStations() {
 
   return validStations;
 }
+
+/**
+ * loadStationRoutes(stationCode):
+ * Loads routes.csv for the specified station folder and returns an array of:
+ * [
+ *   { route_id, station_code, date, departure_time_utc, executor_capacity_cm3, route_score }
+ * ]
+ */
+async function loadStationRoutes(stationCode) {
+  const routes = await d3.csv(`processed_data/${stationCode}/routes.csv`, d => ({
+    route_id: d.route_id,
+    station_code: d.station_code,
+    date: d.date,
+    departure_time_utc: d.departure_time_utc,
+    executor_capacity_cm3: +d.executor_capacity_cm3,
+    route_score: d.route_score
+  }));
+  return routes;
+}
+
+/**
+ * loadStationStops(stationCode):
+ * Loads stops.csv for the station folder and returns an array of:
+ * [
+ *   { route_id, stop_id, lat, lng, zone_id, type }
+ * ]
+ */
+async function loadStationStops(stationCode) {
+  const stops = await d3.csv(`processed_data/${stationCode}/stops.csv`, d => ({
+    route_id: d.route_id,
+    stop_id: d.stop_id,
+    lat: +d.lat,
+    lng: +d.lng,
+    zone_id: d.zone_id,
+    type: d.type
+  }));
+  return stops;
+}
+
+/**
+ * loadStationSequences(stationCode):
+ * Loads actual_sequences.csv for the station folder and returns an array of:
+ * [
+ *   { route_id, stop_id, sequence_order }
+ * ]
+ */
+async function loadStationSequences(stationCode) {
+  const sequences = await d3.csv(`processed_data/${stationCode}/actual_sequences.csv`, d => ({
+    route_id: d.route_id,
+    stop_id: d.stop_id,
+    sequence_order: +d.sequence_order
+  }));
+  return sequences;
+}
