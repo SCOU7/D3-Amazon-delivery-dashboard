@@ -1,12 +1,21 @@
 // scripts/main.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Milestone #1: Basic layout script loaded and running.");
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Milestone #2 (Real Data): Loading station-level aggregates...");
 
-  // Let's just set the current level to 1 for now.
-  const currentLevelLabel = document.getElementById("currentLevelLabel");
-  currentLevelLabel.textContent = "1 (Nation)";
+  try {
+    // 1) Load aggregated station data
+    const stationAggregates = await loadAllStations();
+    appState.stations = stationAggregates;
+    console.log("Successfully loaded all station data:", stationAggregates);
 
-  // In a future milestone, we can set up data loading and transitions.
-  // For now, we're confirming that everything renders correctly.
+    // 2) Set initial level to 1 (Nation)
+    setLevel(1);
+
+    // 3) Initialize the map
+    initMap();
+
+  } catch (err) {
+    console.error("Error in main.js:", err);
+  }
 });
