@@ -48,11 +48,11 @@ html, body {
   width: 27%;
   height: 100%;
   margin: 0% 2.8%;
-  border: 1px dashed #aaa;
-  display: flex;
-  align-items: center;
+  border: 1px solid #aaa;
   justify-content: center;
-  text-align: center;
+  text-align: center; 
+  padding-top: 2%;
+  padding-bottom: 4%;
 }
 
 /*  ==========  MONITOR SECTION: SCATTER PLOT  ==========  */
