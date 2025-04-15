@@ -9,7 +9,6 @@
 <body>
   <!-- Top 25%: Monitor Container -->
   <div id="monitorContainer">
-    <h2>Monitor Section (Top 25%)</h2>
     <div id="pieChartsContainer">
       <div id="pieChartLevel1" class="pie-chart-placeholder">
         <p>Pie Chart Level 1</p>
@@ -28,20 +27,18 @@
 
   <!-- Bottom 75%: Map Container -->
   <div id="mapContainer">
-    <div id="mapLevelIndicator">
-      <p>Current Level: <span id="currentLevelLabel">Loading...</span></p>
-      <button id="backButton">Back</button>
-    </div>
     <div id="leftSidebar" class="sidebar">
-      <h3>Map Monitor (Left Sidebar)</h3>
+      <div id="mapLevelIndicator">
+        <h3>Current Level: <span id="currentLevelLabel">Loading...</span></h3>
+        <button id="backButton">Back</button>
+      </div>
+      <h3>Map Monitor</h3>
       <div id="mapMonitorContent"></div>
-      <p>Hover details go here</p>
     </div>
     <div id="mapViewport">
-      <h3>Main Map Viewport</h3>
     </div>
     <div id="rightSidebar" class="sidebar">
-      <h3>Filter (Right Sidebar)</h3>
+      <h3>Filter</h3>
       <p>Filter controls go here</p>
     </div>
   </div>

@@ -16,8 +16,10 @@ html, body {
 /* Top 25% for the monitor. */
 #monitorContainer {
   width: 100%;
-  height: 25%;
-  border-bottom: 2px solid #ccc;
+  height: 30%;
+  position: relative;
+  padding: 1% 1%;
+  border-bottom: 2px solid #ccc; /* horizontal rule */
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -27,23 +29,10 @@ html, body {
 /* Bottom 75% for the map + sidebars. */
 #mapContainer {
   width: 100%;
-  height: 75%;
+  height: 70%;
   position: relative;
   display: flex;
   flex-direction: row;
-}
-
-/* The map level indicator can float near the top-middle of #mapContainer. */
-#mapLevelIndicator {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #fafafa;
-  padding: 6px 12px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  z-index: 999;
 }
 
 /*  ==========  MONITOR SECTION: PIE CHARTS  ==========  */
@@ -52,12 +41,13 @@ html, body {
   flex-direction: row;
   width: 50%;
   height: 100%;
+  border-right: 2px solid #ccc; /* horizontal rule */
 }
 
 .pie-chart-placeholder {
-  width: 16%;
-  height: 80%;
-  margin: 1% 1%;
+  width: 27%;
+  height: 100%;
+  margin: 0% 2.8%;
   border: 1px dashed #aaa;
   display: flex;
   align-items: center;
@@ -68,8 +58,8 @@ html, body {
 /*  ==========  MONITOR SECTION: SCATTER PLOT  ==========  */
 .scatter-plot-placeholder {
   width: 30%;
-  height: 80%;
-  margin: 1%;
+  height: 100%;
+  margin: 0% 2.5%;
   border: 1px dashed #aaa;
   display: flex;
   align-items: center;
@@ -83,13 +73,18 @@ html, body {
   height: 100%;
   border-right: 1px solid #ccc;
   box-sizing: border-box;
-  padding: 10px;
-  overflow-y: auto;
+  padding: 2%;
+}
+
+#mapLevelIndicator {
+  height: 15%;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 10%;
 }
 
 #leftSidebar h3,
 #rightSidebar h3 {
-  margin-bottom: 10px;
+  margin-bottom: 2%;
 }
 
 #mapViewport {
@@ -97,7 +92,7 @@ html, body {
   height: 100%;
   border-right: 1px solid #ccc;
   box-sizing: border-box;
-  padding: 10px;
+  margin-bottom: 2%;
   overflow: hidden; /* or auto if we want scrollable */
 }
 
@@ -106,17 +101,12 @@ html, body {
    .collapsed { width: 0; display: none; } 
 */
 
-/* Just some styling for placeholders. */
-#mapViewport h3 {
-  text-align: center;
-  margin-top: 20px;
-  color: #333;
-}
+
 
 /* scripts/mapManager draws route lines. We can style them with classes if you like. */
 .route-group path {
   cursor: pointer;
-  opacity: 0.9;
+  opacity: 0.5;
 }
 .route-group:hover path {
   opacity: 1.0;
@@ -127,18 +117,4 @@ html, body {
 .stop-point:hover {
   stroke: yellow;
   stroke-width: 1px;
-}
-
-#mapMonitorContent {
-  margin-top: 10px;
-  font-size: 0.9em;
-  line-height: 1.4;
-}
-/* (optional) Some styling for the back button */
-#mapLevelIndicator {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  /* Add a bit more space for the button if you want. */
 }
