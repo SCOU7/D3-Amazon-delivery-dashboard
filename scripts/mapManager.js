@@ -3,8 +3,12 @@
 let mapSvg = null;
 let projection = null;
 
-function showMapMonitorInfo(htmlString) {
-  d3.select("#mapMonitorContent").html(htmlString);
+function setMapMonitorBase(htmlString) {
+  d3.select("#mapMonitorBase").html(htmlString);
+}
+
+function setMapMonitorHover(htmlString) {
+  d3.select("#mapMonitorHover").html(htmlString);
 }
 
 function initMap() {
@@ -31,7 +35,7 @@ function initMap() {
     // ✅ Static info for Level 2
     const station = appState.selectedStation;
     const totalRoutes = appState.stationRoutes.length;
-    showMapMonitorInfo(`
+    setMapMonitorBase(`
       <p><strong>Station:</strong> ${station}</p>
       <p><strong>Total Routes:</strong> ${totalRoutes}</p>
       <p><em>Hover over stops to see zone ID</em></p>
@@ -43,13 +47,18 @@ function initMap() {
     const routeId = appState.selectedRoute;
     const route = appState.stationRoutes.find(r => r.route_id === routeId);
     const stops = appState.stationStops.filter(s => s.route_id === routeId);
-    const zoneId = stops.length > 0 ? stops[0].zone_id : "Unknown";
+    const zoneIds = [...new Set(stops.map(s => s.zone_id))];
+    const zoneLabel = zoneIds.length === 0
+      ? "Unknown"
+      : zoneIds.length === 1
+        ? zoneIds[0]
+        : `${zoneIds.length} zones`;
     const pkgCount = appState.routePackages.length;
     const score = route ? route.route_score : "N/A";
 
-    showMapMonitorInfo(`
+    setMapMonitorBase(`
       <p><strong>Route ID:</strong> ${routeId}</p>
-      <p><strong>Zone:</strong> ${zoneId}</p>
+      <p><strong>Zone:</strong> ${zoneLabel}</p>
       <p><strong>Packages:</strong> ${pkgCount}</p>
       <p><strong>Route Score:</strong> ${score}</p>
     `);
@@ -91,14 +100,14 @@ function renderLevel1Stations() {
         <p>Location: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
         <p>Total Routes: ${d.total_routes}</p>
       `;
-      showMapMonitorInfo(infoHtml);
+      setMapMonitorHover(infoHtml);
     })
     .on("mouseout", (event) => {
       d3.select(event.currentTarget)
         .attr("stroke", "#333")
         .attr("stroke-width", 1);
   
-      showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
+      setMapMonitorHover("")
     })
     .on("click", (event, d) => {
       handleStationClick(d.station_code);
@@ -232,7 +241,7 @@ function renderLevel2StationRoutes() {
         <p>Route Score: ${routeData.route_score}</p>` : ''}
       <p>Total Stops: ${stopsForRoute.length}</p>
     `;
-    showMapMonitorInfo(infoHtml);
+    setMapMonitorHover(infoHtml);
   })
   .on("mouseout", function () {
     routesGroup.selectAll(".route-group").classed("dimmed", false);
@@ -241,7 +250,7 @@ function renderLevel2StationRoutes() {
       <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
       <p><em>Hover over stops to see zone ID</em></p>
     `;
-    showMapMonitorInfo(infoHtml);
+    setMapMonitorHover("");
   })
   .on("click", () => {
     handleRouteClick(route_id);
@@ -282,14 +291,14 @@ function renderLevel2StationRoutes() {
           <p>Zone: ${d.zone_id}</p>
           <p>Coordinates: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
         `;
-        showMapMonitorInfo(infoHtml);
+        setMapMonitorHover(infoHtml);
       })
       .on("mouseout", () => {
         const infoHtml = `
           <p><strong>Route ID:</strong> ${route_id}</p>
           <p>Total Stops: ${stopsForRoute.length}</p>
         `;
-        showMapMonitorInfo(infoHtml);
+        setMapMonitorHover("");
       });
   }
 }
@@ -396,10 +405,10 @@ function renderLevel3Route() {
           <p>Distance (km): ${dist.toFixed(2)}</p>
           <p>Traffic Ratio (sec/km): ${ratio.toFixed(2)}</p>
         `;
-        showMapMonitorInfo(infoHtml);
+        setMapMonitorHover(infoHtml);
       })
       .on("mouseout", () => {
-        showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
+        setMapMonitorHover("")
       });
   }
 
@@ -432,10 +441,10 @@ function renderLevel3Route() {
         <p>Package Count: ${pkgs.length}</p>
         ${pkgs.length > 0 ? `<p>Package IDs: ${packagePreview}${pkgs.length > 3 ? '...' : ''}</p>` : ''}
       `;
-      showMapMonitorInfo(infoHtml);
+      setMapMonitorHover(infoHtml);
     })
     .on("mouseout", () => {
-      showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
+      setMapMonitorHover("");
     });
 }
 
