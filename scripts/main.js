@@ -10,12 +10,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2) Store them in state
     appState.stations = stationAggregates;
     appState.stationData = stationData;
-    if (typeof renderScatterPlot === "function") {
+    if (typeof window.renderScatterPlot === "function") { 
       console.log("hello")
-      renderScatterPlot(); // now data is available
+      window.renderScatterPlot(); 
       console.log("bye")
     }
-
+    
     console.log("All station data preloaded. Found", appState.stations.length, "stations.");
 
     // 3) Set initial level and map
