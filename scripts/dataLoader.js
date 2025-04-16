@@ -1,5 +1,3 @@
-// scripts/dataLoader.js
-
 // Station codes defined as before
 const STATION_CODES = [
   "DAU1", "DBO1", "DBO2", "DBO3", "DCH1", "DCH2", "DCH3", "DCH4",
@@ -9,13 +7,14 @@ const STATION_CODES = [
 
 /**
  * preloadAllData():
- *  1) For each station code, load routes.csv, stops.csv, actual_sequences.csv.
- *  2) Compute:
+ *  1) For each station code, load routes.csv, stops.csv, actual_sequences.csv, packages.csv.
+ *  2) Load borders.json for county boundaries.
+ *  3) Compute:
  *     - total_routes (simply routes.length)
  *     - approximate lat/lng for station (average of stops, or find "Station" row)
- *  3) Build two structures:
+ *  4) Build two structures:
  *     a) stationAggregates[] for Level 1, each with { station_code, lat, lng, total_routes }
- *     b) stationData{} keyed by stationCode => { routes, stops, sequences, lat, lng, total_routes }
+ *     b) stationData{} keyed by stationCode => { routes, stops, sequences, packages, lat, lng, total_routes, borders }
  *
  * Returns: { stationAggregates, stationData }
  */
@@ -23,13 +22,21 @@ async function preloadAllData() {
   const stationData = {};
   const stationAggregates = [];
 
-  // 🆕 Load precomputed route metrics CSV
+  // Load precomputed route metrics CSV
   const routeMetrics = await d3.csv("processed_data/route_time_metrics.csv", r => ({
     route_id: r.route_id,
     total_service_time_sec: +r.total_service_time_sec || 0,
     total_transit_time_sec: +r.total_transit_time_sec || 0
   }));
   const routeMetricsMap = Object.fromEntries(routeMetrics.map(r => [r.route_id, r]));
+
+  // Load borders.json for county boundaries
+  let bordersGeoJSON = null;
+  try {
+    bordersGeoJSON = await d3.json("processed_data/borders.json");
+  } catch (err) {
+    console.error("Error loading borders.json:", err);
+  }
 
   const allPromises = STATION_CODES.map(async (stationCode) => {
     try {
@@ -69,7 +76,7 @@ async function preloadAllData() {
         }))
       ]);
 
-      // 🆕 Attach precomputed times to routes
+      // Attach precomputed times to routes
       routes.forEach(route => {
         const metrics = routeMetricsMap[route.route_id];
         route.total_service_time_sec = metrics ? metrics.total_service_time_sec : null;
@@ -98,7 +105,8 @@ async function preloadAllData() {
         packages,
         lat: avgLat,
         lng: avgLng,
-        total_routes
+        total_routes,
+        borders: bordersGeoJSON // Store borders GeoJSON for each station
       };
 
       stationAggregates.push({
@@ -119,8 +127,6 @@ async function preloadAllData() {
   };
 }
 
-// scripts/dataLoader.js
-
 /**
  * loadRouteTravelTimes(stationCode, route_id):
  *   Reads travel_times/RouteID_xxx_travel_times.csv
@@ -131,16 +137,12 @@ async function loadRouteTravelTimes(stationCode, route_id) {
 
   const raw = await d3.csv(filePath);
 
-  // raw[0] example: { from_stop: "AA", "AF": "476.5", "AI": "57.7", ... }
-  // We'll build a nested dictionary, e.g. travelTimes["AA"]["AF"] = 476.5
   const travelTimes = {};
   for (const row of raw) {
     const fromStop = row["from_stop"];
     travelTimes[fromStop] = {};
-    // Each column is a to_stop
     for (const [key, val] of Object.entries(row)) {
-      if (key === "from_stop") continue; // skip
-      // parse val to number
+      if (key === "from_stop") continue;
       travelTimes[fromStop][key] = +val;
     }
   }

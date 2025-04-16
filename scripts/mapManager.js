@@ -28,11 +28,14 @@ function setMapMonitorHover(htmlString) {
 }
 
 function initMap() {
+  console.log("[DEBUG] initMap called");
+
   const mapContainer = d3.select("#mapViewport");
   mapContainer.selectAll("svg").remove();
 
   const width = mapContainer.node().clientWidth;
   const height = mapContainer.node().clientHeight;
+  console.log("[DEBUG] Map dimensions: width =", width, ", height =", height);
 
   mapSvg = mapContainer.append("svg")
     .attr("width", width)
@@ -41,17 +44,55 @@ function initMap() {
   zoomGroup = mapSvg.append("g")
     .attr("class", "zoom-group");
 
-  // Add grid lines group first to ensure they are behind other elements
-  const gridGroup = zoomGroup.append("g").attr("class", "grid-lines");
-
+  // Set projection based on current level
   if (appState.currentLevel === 1) {
     projection = d3.geoMercator()
       .scale(700)
       .translate([width / 2, height / 2])
       .center([-95, 40]);
+    console.log("[DEBUG] Projection set for Level 1: scale = 700, center = [-95, 40]");
+  } else if (appState.currentLevel === 2 || appState.currentLevel === 3) {
+    fitMapToStationStops(width, height);
+    console.log("[DEBUG] Projection set for Level", appState.currentLevel, "via fitMapToStationStops");
+  } else {
+    console.warn("[DEBUG] Unknown level:", appState.currentLevel);
+    return;
+  }
+
+  // Add background group for county borders
+  const backgroundGroup = zoomGroup.append("g").attr("class", "background-group");
+  console.log("[DEBUG] Background group appended to zoomGroup");
+
+  // Use preloaded borders GeoJSON from any station's data
+  const firstStation = appState.stations[0]?.station_code;
+  const bordersGeoJSON = firstStation ? appState.stationData[firstStation]?.borders : null;
+
+  if (bordersGeoJSON) {
+    console.log("[DEBUG] Borders GeoJSON loaded with", bordersGeoJSON.features.length, "features");
+    console.log("[DEBUG] Sample feature:", JSON.stringify(bordersGeoJSON.features[0]));
+    const geoPath = d3.geoPath().projection(projection);
+    console.log("[DEBUG] GeoPath created with projection");
+
+    backgroundGroup.selectAll("path.county-boundary")
+      .data(bordersGeoJSON.features)
+      .enter()
+      .append("path")
+      .attr("class", "county-boundary")
+      .attr("d", geoPath)
+      .attr("fill", "none")
+      .attr("stroke", "#666")
+      .attr("stroke-width", 1);
+    console.log("[DEBUG] County borders rendered,", bordersGeoJSON.features.length, "paths appended");
+  } else {
+    console.warn("[DEBUG] No borders GeoJSON available for rendering");
+  }
+
+  // Add grid lines group
+  const gridGroup = zoomGroup.append("g").attr("class", "grid-lines");
+
+  if (appState.currentLevel === 1) {
     renderLevel1Stations();
   } else if (appState.currentLevel === 2) {
-    fitMapToStationStops(width, height);
     renderLevel2StationRoutes();
 
     const station = appState.selectedStation;
@@ -114,15 +155,16 @@ function initMap() {
 
     const lng_min = projection.invert([x_min, 0])[0];
     const lng_max = projection.invert([x_max, 0])[0];
-    const lat_min = projection.invert([0, y_max])[1]; // bottom, lower latitude
-    const lat_max = projection.invert([0, y_min])[1]; // top, higher latitude
+    const lat_min = projection.invert([0, y_max])[1];
+    const lat_max = projection.invert([0, y_min])[1];
+    console.log("[DEBUG] Grid lines range: lng_min =", lng_min, ", lng_max =", lng_max, ", lat_min =", lat_min, ", lat_max =", lat_max);
 
     const lng_ints = d3.range(Math.ceil(lng_min), Math.floor(lng_max) + 1);
     const lat_ints = d3.range(Math.ceil(lat_min), Math.floor(lat_max) + 1);
 
     const verticalLines = lng_ints.map(n => ({
       x: projection([n, 0])[0],
-      y1: -10000, // Large range to ensure spanning after zoom
+      y1: -10000,
       y2: 10000
     }));
 
@@ -171,6 +213,7 @@ function initMap() {
   const zoom = d3.zoom()
     .scaleExtent([0.5, 20])
     .on("zoom", (event) => {
+      console.log("[DEBUG] Zoom event triggered, transform:", event.transform);
       zoomGroup.attr("transform", event.transform);
       updateGridLines();
     });
@@ -196,7 +239,8 @@ function renderLevel1Stations() {
     .attr("data-station", d => d.station_code)
     .attr("cx", d => projection([d.lng, d.lat])[0])
     .attr("cy", d => projection([d.lng, d.lat])[1])
-    .attr("r", d => Math.sqrt(d.total_routes) * 0.5)
+    // .attr("r", d => Math.sqrt(d.total_routes) * 0.5)
+    .attr("r", d => Math.sqrt(d.total_routes) / Math.sqrt(d.total_routes) * 2.5)
     .attr("fill", "steelblue")
     .attr("stroke", "#333")
     .attr("stroke-width", 1)
