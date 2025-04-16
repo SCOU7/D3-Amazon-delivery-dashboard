@@ -1,4 +1,16 @@
 // scripts/scatterPlot.js
+import { appState } from './stateManager.js';
+export { renderScatterPlot };
+
+function getHalfHourTicks([min, max]) {
+  const start = Math.ceil(min / 1800) * 1800;
+  const end = Math.floor(max / 1800) * 1800;
+  const ticks = [];
+  for (let t = start; t <= end; t += 1800) {
+    ticks.push(t);
+  }
+  return ticks;
+}
 
 function formatTime(seconds) {
   seconds = Math.round(seconds);
@@ -71,7 +83,9 @@ function renderScatterPlot() {
 
   svg.append("g")
     .attr("transform", `translate(0, ${height})`)
-    .call(d3.axisBottom(xScale).tickFormat(formatTimeTiny));
+    .call(d3.axisBottom(xScale)
+    .tickValues(getHalfHourTicks(xScale.domain()))
+    .tickFormat(formatTimeTiny));
 
   svg.append("g")
     .call(d3.axisLeft(yScale).tickFormat(formatTimeTiny));
@@ -156,5 +170,3 @@ function renderScatterPlot() {
     .attr("r", 0)
     .remove();
 }
-
-window.renderScatterPlot = renderScatterPlot;

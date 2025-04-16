@@ -1,3 +1,8 @@
+import { appState } from './stateManager.js';
+import { renderScatterPlot } from './scatterPlot.js';
+import { updatePieCharts } from './pieCharts.js';
+import { initMap } from './mapManager.js';
+
 // scripts/filterManager.js
 
 function initializeFilters() {
@@ -158,3 +163,5 @@ function resetFilters() {
   appState.filters.routeScores = new Set(["High", "Medium", "Low"]);
   applyFilters();
 }
+
+export { initializeFilters, applyFilters, populateZoneOptionsFromCurrentStation };

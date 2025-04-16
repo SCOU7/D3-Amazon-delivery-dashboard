@@ -1,3 +1,6 @@
+import { appState, setLevel, clearStationData, clearRouteData } from './stateManager.js';
+import { loadRouteTravelTimes } from './dataLoader.js';
+
 function formatTime(seconds) {
   seconds = Math.round(seconds);
   const h = Math.floor(seconds / 3600);
@@ -583,3 +586,5 @@ function serviceColorScale(avgService) {
     .range(["#ccece6", "#66c2a4", "#238b45"])
     .clamp(true)(avgService);
 }
+
+export { initMap };

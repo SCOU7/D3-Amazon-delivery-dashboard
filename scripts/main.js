@@ -1,39 +1,30 @@
-// scripts/main.js
+import { preloadAllData } from './dataLoader.js';
+import { initMap } from './mapManager.js';
+import { renderScatterPlot } from './scatterPlot.js';
+import { updatePieCharts } from './pieCharts.js';
+import { initializeFilters } from './filterManager.js';
+import { appState, setLevel, handleBackNavigation } from './stateManager.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Preloading all data for all stations...");
 
   try {
-    // 1) Preload everything
     const { stationAggregates, stationData } = await preloadAllData();
-
-    // 2) Store them in state
     appState.stations = stationAggregates;
     appState.stationData = stationData;
-    if (typeof renderScatterPlot === "function") {
-      console.log("hello")
-      renderScatterPlot(); // now data is available
-      console.log("bye")
-    }
 
-    console.log("All station data preloaded. Found", appState.stations.length, "stations.");
-
-    // 3) Set initial level and map
+    renderScatterPlot();
     setLevel(1);
     initMap();
-
-    // 4) Initialize filter UI
     initializeFilters();
 
-    console.log("Click a station circle to jump to Level 2 instantly!");
+    console.log("All station data preloaded. Found", appState.stations.length, "stations.");
   }
   catch (err) {
     console.error("Error during preloading:", err);
   }
 
-  // Back button logic
-  const backBtn = document.getElementById("backButton");
-  backBtn.addEventListener("click", () => {
+  document.getElementById("backButton").addEventListener("click", () => {
     handleBackNavigation();
   });
 

@@ -1,3 +1,5 @@
+import { appState } from './stateManager.js'
+
 // Station codes defined as before
 const STATION_CODES = [
   "DAU1", "DBO1", "DBO2", "DBO3", "DCH1", "DCH2", "DCH3", "DCH4",
@@ -149,3 +151,5 @@ async function loadRouteTravelTimes(stationCode, route_id) {
 
   return travelTimes;
 }
+
+export { preloadAllData, loadRouteTravelTimes };
