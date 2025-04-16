@@ -282,10 +282,10 @@ button:hover {
   stroke-width: 1;
   cursor: pointer;
   transition: 
-    stroke 0.2s ease,
-    stroke-width 0.2s ease,
-    r 0.2s ease,
-    fill-opacity 0.2s ease;
+    stroke 0.1s ease,
+    stroke-width 0.1s ease,
+    r 0.1s ease,
+    fill-opacity 0.1s ease;
   r: 2.4; /* default radius */
   fill-opacity: 1;
 }
@@ -294,16 +294,16 @@ button:hover {
 .station-circle:hover {
   stroke: #ffcc00;
   stroke-width: 2;
-  r: 5; /* enlarge */
-  fill-opacity: 0.7; /* slightly dim */
+  r: 30; /* enlarge */
+  fill-opacity: 0.5; /* slightly dim */
 }
 
 /* Persistent highlight from scatter plot interaction */
 .station-highlight {
   stroke: #ffcc00 !important;
   stroke-width: 2 !important;
-  r: 5 !important;
-  fill-opacity: 0.7 !important;
+  r: 30 !important;
+  fill-opacity: 0.5 !important;
 }
 
 
