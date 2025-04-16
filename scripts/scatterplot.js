@@ -31,12 +31,28 @@ function renderScatterPlot() {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const allRoutes = Object.values(appState.stationData).flatMap(st => st.routes);
-  const routeSet = appState.filteredRouteIDs ?? new Set(allRoutes.map(r => r.route_id));
-  const routePoints = allRoutes
-    .filter(r => routeSet.has(r.route_id))
-    .filter(r => r.total_service_time_sec != null && r.total_transit_time_sec != null);
+  // --- NEW: Determine which routes to plot based on currentLevel and filters ---
+  let routePoints = [];
+  const level = appState.currentLevel;
+  if (level === 1) {
+    // Level 1: Show all routes in all stations
+    routePoints = Object.values(appState.stationData).flatMap(st => st.routes);
+  } else if (level === 2) {
+    // Level 2: Use the station routes that passed the filter
+    routePoints = appState.filteredStationRoutes || [];
+  } else if (level === 3) {
+    // Level 3: Show only the selected route
+    const route = appState.stationRoutes.find(r => r.route_id === appState.selectedRoute);
+    routePoints = route ? [route] : [];
+  }
 
+  // Filter out routes missing transit or service times
+  routePoints = routePoints.filter(r =>
+    r.total_service_time_sec != null &&
+    r.total_transit_time_sec != null
+  );
+
+  // If no data, show a friendly message
   if (routePoints.length === 0) {
     svg.append("text")
       .attr("x", width / 2)
@@ -47,6 +63,7 @@ function renderScatterPlot() {
     return;
   }
 
+  // --- xScale, yScale, axes setup ---
   const xScale = d3.scaleLinear()
     .domain(d3.extent(routePoints, d => d.total_transit_time_sec))
     .nice()
@@ -64,7 +81,6 @@ function renderScatterPlot() {
   const xTicks = d3.range(xMin, xMax + 1, 1800);
   const yTicks = d3.range(yMin, yMax + 1, 1800);
 
-  // Axes
   svg.append("g")
     .attr("transform", `translate(0, ${height})`)
     .call(d3.axisBottom(xScale).tickValues(xTicks).tickFormat(formatTimeShort));
@@ -72,7 +88,7 @@ function renderScatterPlot() {
   svg.append("g")
     .call(d3.axisLeft(yScale).tickValues(yTicks).tickFormat(formatTimeShort));
 
-  // Labels
+  // --- Labels ---
   svg.append("text")
     .attr("x", width / 2)
     .attr("y", height + margin.bottom - 10)
@@ -96,7 +112,7 @@ function renderScatterPlot() {
     .style("font-weight", "bold")
     .text("Transit vs. Service Time per Route");
 
-  // Plot dots
+  // --- Plot the circles ---
   svg.selectAll("circle.route-dot")
     .data(routePoints)
     .enter()
