@@ -12,12 +12,19 @@ function initializeFilters() {
         <label><input type="checkbox" value="Medium" checked> Medium</label><br>
         <label><input type="checkbox" value="Low" checked> Low</label>
       </div>
+
       <div style="margin-top: 1em;">
         <strong>Date Range</strong><br>
-        <input type="range" id="dateSlider" min="0" max="100" value="0" step="1" style="width: 100%;">
-        <div id="dateRangeLabel" style="font-size: 12px;"></div>
+        <input type="date" id="startDate"> – 
+        <input type="date" id="endDate">
+      </div>
+
+      <div style="margin-top: 1em;">
+        <strong>Zone ID</strong><br>
+        <select id="zoneFilter" multiple size="5" style="width: 100%;"></select>
       </div>
     </div>
+
     <button id="applyFilters">Apply</button>
     <button id="resetFilters">Reset</button>
     <div id="filterStatus" style="margin-top: 10px;"></div>
@@ -26,72 +33,104 @@ function initializeFilters() {
   document.getElementById("applyFilters").addEventListener("click", applyFilters);
   document.getElementById("resetFilters").addEventListener("click", resetFilters);
 
-  // Dynamically calculate global date domain
+  // Set up date range
   const allRoutes = Object.values(appState.stationData).flatMap(s => s.routes);
-  const dateSet = allRoutes.map(r => r.date).filter(Boolean).sort();
-  const minDate = dateSet[0];
-  const maxDate = dateSet[dateSet.length - 1];
+  const dateList = allRoutes.map(r => r.date).filter(Boolean).sort();
+  appState.filters.dateRange = { min: dateList[0], max: dateList[dateList.length - 1] };
 
-  appState.filters.dateRange = { min: minDate, max: maxDate };
+  document.getElementById("startDate").value = dateList[0];
+  document.getElementById("endDate").value = dateList[dateList.length - 1];
+  appState.filters.selectedDateMin = dateList[0];
+  appState.filters.selectedDateMax = dateList[dateList.length - 1];
 
-  const minTS = new Date(minDate).getTime();
-  const maxTS = new Date(maxDate).getTime();
+  // Populate zone options
+  populateZoneOptions();
 
-  const slider = document.getElementById("dateSlider");
-  slider.min = minTS;
-  slider.max = maxTS;
-  slider.value = maxTS;
-  slider.step = 24 * 60 * 60 * 1000; // 1 day step
+  applyFilters();
 
-  const label = document.getElementById("dateRangeLabel");
-  label.textContent = `Showing routes before: ${maxDate}`;
+  // Tag styling
+  const style = document.createElement("style");
+  style.textContent = `
+    .filter-tag {
+      display: inline-block;
+      background-color: #eef;
+      color: #334;
+      padding: 2px 6px;
+      margin: 2px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: 1px solid #ccd;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
-  slider.addEventListener("input", () => {
-    const d = new Date(+slider.value).toISOString().slice(0, 10);
-    label.textContent = `Showing routes before: ${d}`;
+function populateZoneOptions() {
+  const zoneSet = new Set();
+  Object.values(appState.stationData).forEach(station => {
+    station.stops.forEach(stop => zoneSet.add(stop.zone_id));
   });
-
-  applyFilters(); // apply initially
+  const zoneSelect = document.getElementById("zoneFilter");
+  Array.from(zoneSet).sort().forEach(zone => {
+    const opt = document.createElement("option");
+    opt.value = zone;
+    opt.textContent = zone;
+    zoneSelect.appendChild(opt);
+  });
 }
 
 function applyFilters() {
-  const checkboxes = document.querySelectorAll("#filterContainer input[type='checkbox']");
-  const selectedScores = new Set();
-  checkboxes.forEach(cb => {
-    if (cb.checked) selectedScores.add(cb.value);
-  });
+  const selectedScores = new Set(
+    Array.from(document.querySelectorAll("input[type='checkbox']"))
+      .filter(cb => cb.checked)
+      .map(cb => cb.value)
+  );
   appState.filters.routeScores = selectedScores;
 
-  const cutoffDate = new Date(+document.getElementById("dateSlider").value);
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  appState.filters.selectedDateMin = startDate;
+  appState.filters.selectedDateMax = endDate;
 
-  if (appState.stationRoutes && Array.isArray(appState.stationRoutes)) {
-    appState.filteredStationRoutes = appState.stationRoutes.filter(r => {
-      const matchesScore = selectedScores.has(r.route_score);
-      const rDate = new Date(r.date);
-      return matchesScore && (rDate <= cutoffDate);
-    });
-  }
+  const zoneSelect = document.getElementById("zoneFilter");
+  appState.filters.zoneIds = new Set(Array.from(zoneSelect.selectedOptions).map(o => o.value));
 
-  // Display summary
+  const { routeScores, selectedDateMin, selectedDateMax, zoneIds } = appState.filters;
+
+  appState.filteredStationRoutes = appState.stationRoutes.filter(route => {
+    const scoreOK = routeScores.has(route.route_score);
+    const dateOK = route.date >= selectedDateMin && route.date <= selectedDateMax;
+    const stopZones = appState.stationStops
+      .filter(s => s.route_id === route.route_id)
+      .map(s => s.zone_id);
+    const zoneOK = zoneIds.size === 0 || stopZones.some(z => zoneIds.has(z));
+    return scoreOK && dateOK && zoneOK;
+  });
+
+  // Filter summary
+  const summary = [];
+  if (routeScores.size < 3) summary.push(`Score: ${[...routeScores].join(", ")}`);
+  if (startDate !== appState.filters.dateRange.min || endDate !== appState.filters.dateRange.max)
+    summary.push(`Date: ${startDate} – ${endDate}`);
+  if (zoneIds.size > 0) summary.push(`Zones: ${Array.from(zoneIds).join(", ")}`);
+
   const status = document.getElementById("filterStatus");
-  const cutoffStr = cutoffDate.toISOString().slice(0, 10);
-  status.textContent = `Filters applied: Score = [${Array.from(selectedScores).join(", ")}], Date ≤ ${cutoffStr}`;
+  status.innerHTML = `
+    <div style="margin-bottom: 4px;">Filtered ${appState.filteredStationRoutes.length} routes</div>
+    ${summary.map(s => `<span class="filter-tag">${s}</span>`).join(" ")}
+  `;
 
   updatePieCharts();
   initMap();
 }
 
 function resetFilters() {
-  // Reset checkboxes
-  document.querySelectorAll("#filterContainer input[type='checkbox']")
-    .forEach(cb => cb.checked = true);
-
-  // Reset slider
-  const max = new Date(appState.filters.dateRange.max).getTime();
-  document.getElementById("dateSlider").value = max;
-  document.getElementById("dateRangeLabel").textContent = `Showing routes before: ${appState.filters.dateRange.max}`;
+  document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = true);
+  const { min, max } = appState.filters.dateRange;
+  document.getElementById("startDate").value = min;
+  document.getElementById("endDate").value = max;
+  Array.from(document.getElementById("zoneFilter").options).forEach(o => o.selected = false);
 
   appState.filters.routeScores = new Set(["High", "Medium", "Low"]);
-
   applyFilters();
 }
