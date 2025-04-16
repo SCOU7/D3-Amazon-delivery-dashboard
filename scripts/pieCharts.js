@@ -108,7 +108,10 @@ function aggregateDeliveredBinary(level) {
       .flatMap(st => st.packages);
   } else if (level === 2) {
     const station = appState.stationData[appState.selectedStation];
-    pkgs = station ? station.packages : [];
+    const validRouteIDs = new Set(appState.filteredStationRoutes.map(r => r.route_id));
+    pkgs = station
+      ? station.packages.filter(p => validRouteIDs.has(p.route_id))
+      : [];
   } else if (level === 3) {
     pkgs = appState.routePackages || [];
   }
