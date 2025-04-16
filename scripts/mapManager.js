@@ -1,5 +1,22 @@
 // scripts/mapManager.js
 
+function formatTime(seconds) {
+  seconds = Math.round(seconds);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function formatTimeShort(seconds) {
+  seconds = Math.round(seconds);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m${s.toString().padStart(2, '0')}s`;
+}
+
 let mapSvg = null;
 let projection = null;
 
@@ -75,8 +92,8 @@ function initMap() {
       <p><strong>Zone:</strong> ${zoneLabel}</p>
       <p><strong>Packages:</strong> ${pkgCount}</p>
       <p><strong>Route Score:</strong> ${score}</p>
-      <p><strong>Transit Time:</strong> ${totalTransit.toFixed(1)} sec</p>
-      <p><strong>Service Time:</strong> ${totalService.toFixed(1)} sec</p>
+      <p><strong>Transit Time:</strong> ${formatTime(totalTransit)}</p>
+      <p><strong>Service Time:</strong> ${formatTime(totalService)}</p>
     `);
   }
 }

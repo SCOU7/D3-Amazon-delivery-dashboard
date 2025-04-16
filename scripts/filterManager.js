@@ -141,6 +141,7 @@ function applyFilters() {
   `;
 
   updatePieCharts();
+  renderScatterPlot();
   initMap();
 }
 

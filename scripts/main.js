@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2) Store them in state
     appState.stations = stationAggregates;
     appState.stationData = stationData;
+    if (typeof renderScatterPlot === "function") {
+      renderScatterPlot(); // now data is available
+    }
 
     console.log("All station data preloaded. Found", appState.stations.length, "stations.");
 

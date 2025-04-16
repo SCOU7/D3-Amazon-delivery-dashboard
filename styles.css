@@ -57,7 +57,7 @@ html, body {
 
 /*  ==========  MONITOR SECTION: SCATTER PLOT  ==========  */
 .scatter-plot-placeholder {
-  width: 30%;
+  width: 40%;
   height: 100%;
   margin: 0% 2.5%;
   border: 1px dashed #aaa;
