@@ -2,14 +2,14 @@
 
 (function () {
   const routeScoreColors = {
-    High: "#d73027",
-    Medium: "#fc8d59",
-    Low: "#91bfdb"
+    High: "#4CAF50",  // var(--primary-color)
+    Medium: "#ffcc00", // var(--secondary-color)
+    Low: "#1ee954"     // bright green from stop-point
   };
-
+  
   const packageStatusColorsBinary = {
-    DELIVERED: "#4CAF50",
-    OTHER: "#FF5722"
+    DELIVERED: "#4CAF50",         // green
+    OTHER: "#ff6f61"              // soft red/orange
   };
 
   const timeIntervals = [
@@ -28,9 +28,9 @@
   ];
 
   const timeIntervalColors = [
-    "#FFCC80", "#FFE082", "#FFF176", "#AED581",
-    "#81C784", "#4DB6AC", "#4FC3F7", "#64B5F6",
-    "#BA68C8", "#9575CD", "#A1887F", "#90A4AE"
+    "#FFF176", "#AED581", "#4FC3F7", "#64B5F6", // yellow-green-blue hues
+    "#BA68C8", "#9575CD", "#A1887F", "#90A4AE",
+    "#FFB300", "#FF7043", "#F06292", "#4DD0E1"  // warm tones
   ];
 
   const transitionDuration = 750;
@@ -166,10 +166,11 @@
         .attr("height", height)
         .append("g")
         .attr("class", "pie-group")
-        .attr("transform", `translate(${width / 2}, ${height / 2})`);
+        .attr("transform", `translate(${width / 2}, ${height / 2 - 30})`); // shift up by 10px
     } else {
       svgSelection = svgSelection.select("g.pie-group")
-        .attr("transform", `translate(${width / 2}, ${height / 2})`);
+      .attr("transform", `translate(${width / 2}, ${height / 2 - 30})`); // shift up by 10px
+
     }
 
     container.select("svg.pie-svg")
@@ -227,7 +228,7 @@
 
     arcs.exit().remove();
 
-    const labelOffset = 10; // How far outside the arc
+    const labelOffset = 15; // How far outside the arc
 
     const labels = svgSelection.selectAll("text.label")
       .data(arcData, d => d.data.score);
@@ -239,14 +240,14 @@
       .attr("transform", d => {
         const [x, y] = arc.centroid(d);
         const angle = Math.atan2(y, x);
-        const r = radius + labelOffset;
+        const r = radius + labelOffset ;
         const lx = r * Math.cos(angle);
         const ly = r * Math.sin(angle);
         return `translate(${lx}, ${ly})`;
       })
-      .attr("text-anchor", "middle")
+      .attr("text-anchor", "start")
       .attr("alignment-baseline", "middle")
-      .style("font-size", "12px")
+      .style("font-size", "7px")
       .style("fill", "white")
       .text(d => d.data.score);
 
