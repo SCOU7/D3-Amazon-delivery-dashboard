@@ -101,21 +101,24 @@ function renderScatterPlot() {
     .attr("y", height + margin.bottom - 10)
     .attr("text-anchor", "middle")
     .style("font-size", "12px")
-    .text("Total Transit Time");
+    .text("Total Transit Time")
+    .style("fill", "white");
   svg.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
     .attr("y", -margin.left + 15)
     .attr("text-anchor", "middle")
     .style("font-size", "12px")
-    .text("Total Service Time");
+    .text("Total Service Time")
+    .style("fill", "white");
   svg.append("text")
     .attr("x", width / 2)
     .attr("y", -10)
     .attr("text-anchor", "middle")
     .style("font-size", "14px")
     .style("font-weight", "bold")
-    .text("Transit vs. Service Time per Route");
+    .text("Transit vs. Service Time per Route")
+    .style("fill", "white");
 
   // Data join for dots (using route_id as key).
   const dots = svg.selectAll("circle.route-dot")

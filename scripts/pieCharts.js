@@ -247,7 +247,7 @@
       .attr("text-anchor", "middle")
       .attr("alignment-baseline", "middle")
       .style("font-size", "12px")
-      .style("fill", "#000")
+      .style("fill", "white")
       .text(d => d.data.score);
 
     labels.exit().remove();
