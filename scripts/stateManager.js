@@ -17,6 +17,7 @@ const appState = {
 
   filters: {
     routeScores: new Set(["High", "Medium", "Low"]),
+    dateRange: null // { min: "YYYY-MM-DD", max: "YYYY-MM-DD" }
   },
 
   filteredStationRoutes: []
