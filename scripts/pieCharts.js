@@ -1,17 +1,40 @@
 // scripts/pieCharts.js
 
-(function() {
-  // Define color mapping for route_score categories.
+(function () {
   const routeScoreColors = {
     High: "#d73027",
     Medium: "#fc8d59",
     Low: "#91bfdb"
   };
 
-  // Duration for transitions (in milliseconds).
+  const packageStatusColorsBinary = {
+    DELIVERED: "#4CAF50",
+    OTHER: "#FF5722"
+  };
+
+  const timeIntervals = [
+    { label: "5–7AM", start: 5, end: 7 },
+    { label: "7–9AM", start: 7, end: 9 },
+    { label: "9–11AM", start: 9, end: 11 },
+    { label: "11–1PM", start: 11, end: 13 },
+    { label: "1–3PM", start: 13, end: 15 },
+    { label: "3–5PM", start: 15, end: 17 },
+    { label: "5–7PM", start: 17, end: 19 },
+    { label: "7–9PM", start: 19, end: 21 },
+    { label: "9–11PM", start: 21, end: 23 },
+    { label: "11–1AM", start: 23, end: 1 },
+    { label: "1–3AM", start: 1, end: 3 },
+    { label: "3–5AM", start: 3, end: 5 },
+  ];
+
+  const timeIntervalColors = [
+    "#FFCC80", "#FFE082", "#FFF176", "#AED581",
+    "#81C784", "#4DB6AC", "#4FC3F7", "#64B5F6",
+    "#BA68C8", "#9575CD", "#A1887F", "#90A4AE"
+  ];
+
   const transitionDuration = 750;
 
-  // Define the tooltip once so that it persists between updates.
   const tooltip = d3.select("body")
     .selectAll("div.tooltip")
     .data([null])
@@ -24,67 +47,96 @@
     .style("padding", "5px")
     .style("opacity", 0);
 
-  // --- Faster Aggregation Functions ---
+  // ---------- Aggregation Functions ----------
 
-  // National aggregation using flatMap and reduce.
-  function aggregateNationalRoutes() {
-    const allRoutes = Object.values(appState.stationData).flatMap(s => s.routes);
-    return allRoutes.reduce((acc, route) => {
-      const score = route.route_score;
+  function aggregateRouteScores(level) {
+    let routes = [];
+
+    if (level === 1) {
+      routes = Object.values(appState.stationData).flatMap(st => st.routes);
+    } else if (level === 2) {
+      routes = appState.filteredStationRoutes || [];
+    } else if (level === 3) {
+      const route = appState.stationRoutes.find(r => r.route_id === appState.selectedRoute);
+      if (route) routes = [route];
+    }
+
+    return routes.reduce((acc, r) => {
+      const score = r.route_score || "UNKNOWN";
       acc[score] = (acc[score] || 0) + 1;
       return acc;
-    }, { High: 0, Medium: 0, Low: 0 });
-  }
-
-  // Station aggregation using reduce.
-  function aggregateStationRoutes() {
-    return (appState.filteredStationRoutes || []).reduce((acc, route) => {
-      const score = route.route_score;
-      acc[score] = (acc[score] || 0) + 1;
-      return acc;
-    }, { High: 0, Medium: 0, Low: 0 });
-  }
-
-  // Zone aggregation: precompute a mapping from route_id to zones from appState.stationStops.
-  function aggregateRoutesInSameZone() {
-    const counts = { High: 0, Medium: 0, Low: 0 };
-    const selectedRoute = appState.selectedRoute;
-    if (!selectedRoute) return counts;
-    
-    // Precompute a map: route_id => Set of zone_ids.
-    const routeZoneMap = appState.stationStops.reduce((map, stop) => {
-      if (!map[stop.route_id]) {
-        map[stop.route_id] = new Set();
-      }
-      map[stop.route_id].add(stop.zone_id);
-      return map;
     }, {});
-    
-    // Determine target zone from the first stop of the selected route.
-    const targetZones = routeZoneMap[selectedRoute];
-    if (!targetZones || targetZones.size === 0) return counts;
-    const targetZone = Array.from(targetZones)[0];
-    
-    // Count stationRoutes whose corresponding stop set contains the targetZone.
-    appState.stationRoutes.forEach(route => {
-      const zones = routeZoneMap[route.route_id];
-      if (zones && zones.has(targetZone)) {
-        const score = route.route_score;
-        counts[score] = (counts[score] || 0) + 1;
+  }
+
+  function aggregateDepartureTimeIntervals(level) {
+    let routes = [];
+
+    if (level === 1) {
+      routes = Object.values(appState.stationData).flatMap(s => s.routes);
+    } else if (level === 2) {
+      routes = appState.filteredStationRoutes || [];
+    } else if (level === 3) {
+      const route = appState.stationRoutes.find(r => r.route_id === appState.selectedRoute);
+      if (route) routes = [route];
+    }
+
+    const counts = Object.fromEntries(timeIntervals.map(t => [t.label, 0]));
+
+    routes.forEach(r => {
+      if (!r.departure_time_utc) return;
+      const hour = parseInt(r.departure_time_utc.split(":")[0]);
+
+      for (const t of timeIntervals) {
+        if (t.start < t.end && hour >= t.start && hour < t.end) {
+          counts[t.label]++;
+          break;
+        } else if (t.start > t.end && (hour >= t.start || hour < t.end)) {
+          counts[t.label]++;
+          break;
+        }
       }
     });
+
     return counts;
   }
 
-  // Convert counts object into an array format for d3.pie, filtering out zero values.
-  function createPieData(counts) {
-    return Object.entries(counts)
-      .map(([score, value]) => ({ score, value }))
-      .filter(d => d.value > 0);
+  function aggregateDeliveredBinary(level) {
+    let pkgs = [];
+
+    if (level === 1) {
+      pkgs = Object.values(appState.stationData)
+        .flatMap(st => st.packages);
+    } else if (level === 2) {
+      const station = appState.stationData[appState.selectedStation];
+      pkgs = station ? station.packages : [];
+    } else if (level === 3) {
+      pkgs = appState.routePackages || [];
+    }
+
+    const counts = { DELIVERED: 0, OTHER: 0 };
+
+    pkgs.forEach(p => {
+      if (p.scan_status === "DELIVERED") {
+        counts.DELIVERED++;
+      } else {
+        counts.OTHER++;
+      }
+    });
+
+    return counts;
   }
 
-  // --- Title Rendering --- 
-  // Renders a title (an <h4> element) at the top of the container.
+  function createPieData(counts, thresholdPercent = 0) {
+    const total = Object.values(counts).reduce((sum, val) => sum + val, 0);
+    return Object.entries(counts)
+      .map(([label, value]) => ({
+        score: label,
+        value,
+        percent: total > 0 ? (value / total) * 100 : 0
+      }))
+      .filter(d => d.value > 0 && d.percent >= thresholdPercent);
+  }
+
   function renderPieTitle(containerId, title) {
     const container = d3.select(`#${containerId}`);
     let titleSelection = container.select(".pie-title");
@@ -99,17 +151,13 @@
       .text(title);
   }
 
-  // --- Pie Chart Rendering Function ---
-  // Creates or updates a pie chart in the given container.
-  function renderPieChart(containerId, data) {
+  function renderPieChart(containerId, data, colorMap) {
     const container = d3.select(`#${containerId}`);
     const rect = container.node().getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    // Adjust the radius by modifying the subtraction value here.
     const radius = Math.min(width, height) / 3.5;
 
-    // Create or select the main SVG element and group.
     let svgSelection = container.select("svg.pie-svg");
     if (svgSelection.empty()) {
       svgSelection = container.append("svg")
@@ -124,54 +172,54 @@
         .attr("transform", `translate(${width / 2}, ${height / 2})`);
     }
 
-    // Use a fade transition to show/hide the pie chart.
     container.select("svg.pie-svg")
       .transition()
       .duration(transitionDuration)
-      .style("opacity", data.length > 0 ? 1 : 0);
+      .style("opacity", data.length > 0 ? 1 : 0.25);
 
-    // Create the pie layout (preserving order via sort(null)).
     const pie = d3.pie()
       .value(d => d.value)
       .sort(null);
     const arcData = pie(data);
-
-    // Compute total for percentage calculation.
     const total = d3.sum(arcData, d => d.data.value);
 
-    // Define the arc generator.
     const arc = d3.arc()
       .outerRadius(radius)
       .innerRadius(0);
 
-    // Data join for arcs.
     const arcs = svgSelection.selectAll("path.arc")
       .data(arcData, d => d.data.score);
 
-    // Enter new arcs and update arcs.
     arcs.enter()
       .append("path")
       .attr("class", "arc")
-      .attr("fill", d => routeScoreColors[d.data.score])
-      .each(function(d) { this._current = d; })
+      .attr("fill", d => {
+        if (colorMap instanceof Array) {
+          const index = timeIntervals.findIndex(t => t.label === d.data.score);
+          return colorMap[index] || "#ccc";
+        } else {
+          return colorMap[d.data.score] || "#ccc";
+        }
+      })
+      .each(function (d) { this._current = d; })
       .merge(arcs)
-      .on("mouseover", function(event, d) {
+      .on("mouseover", function (event, d) {
         const percentage = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : 0;
-        tooltip.text(`Routes: ${d.data.value} (${percentage}%)`)
+        tooltip.text(`${d.data.score}: ${d.data.value} (${percentage}%)`)
           .style("left", (event.pageX + 10) + "px")
           .style("top", (event.pageY + 10) + "px")
           .transition().duration(200).style("opacity", 1);
       })
-      .on("mousemove", function(event) {
+      .on("mousemove", function (event) {
         tooltip.style("left", (event.pageX + 10) + "px")
           .style("top", (event.pageY + 10) + "px");
       })
-      .on("mouseout", function() {
+      .on("mouseout", function () {
         tooltip.transition().duration(200).style("opacity", 0);
       })
       .transition()
       .duration(transitionDuration)
-      .attrTween("d", function(d) {
+      .attrTween("d", function (d) {
         const interpolate = d3.interpolate(this._current, d);
         this._current = interpolate(0);
         return t => arc(interpolate(t));
@@ -179,8 +227,8 @@
 
     arcs.exit().remove();
 
-    // --- Add Labels on the Pie Slices ---
-    // Each label shows the route_score (e.g., "High", "Medium", "Low").
+    const labelOffset = 10; // How far outside the arc
+
     const labels = svgSelection.selectAll("text.label")
       .data(arcData, d => d.data.score);
 
@@ -189,60 +237,47 @@
       .attr("class", "label")
       .merge(labels)
       .attr("transform", d => {
-        const centroid = arc.centroid(d);
-        return `translate(${centroid[0]}, ${centroid[1]})`;
+        const [x, y] = arc.centroid(d);
+        const angle = Math.atan2(y, x);
+        const r = radius + labelOffset;
+        const lx = r * Math.cos(angle);
+        const ly = r * Math.sin(angle);
+        return `translate(${lx}, ${ly})`;
       })
       .attr("text-anchor", "middle")
       .attr("alignment-baseline", "middle")
       .style("font-size", "12px")
-      .style("fill", "#fff")
+      .style("fill", "#000")
       .text(d => d.data.score);
 
     labels.exit().remove();
   }
 
-  // --- Update Function for All Pie Charts ---
   function updatePieCharts() {
-    // Pie Chart 1: Always visible. Title: "All Routes".
-    const nationalCounts = aggregateNationalRoutes();
-    const nationalPieData = createPieData(nationalCounts);
-    renderPieChart("pieChartLevel1", nationalPieData);
-    renderPieTitle("pieChartLevel1", "All Routes");
+    const level = appState.currentLevel;
 
-    // Pie Chart 2: Visible if Level >= 2; otherwise fade out.
-    let stationPieData = [];
-    let stationTitle = "";
-    if (appState.currentLevel >= 2) {
-      const stationCounts = aggregateStationRoutes();
-      stationPieData = createPieData(stationCounts);
-      stationTitle = `Station ${appState.selectedStation || ""}`;
-    }
-    renderPieChart("pieChartLevel2", stationPieData);
-    renderPieTitle("pieChartLevel2", stationTitle);
+    // Pie 1: Route Score
+    const pie1Data = createPieData(aggregateRouteScores(level));
+    renderPieChart("pieChartLevel1", pie1Data, routeScoreColors);
+    renderPieTitle("pieChartLevel1", "Route Score");
 
-    // Pie Chart 3: Visible if Level >= 3; otherwise fade out.
-    let zonePieData = [];
-    let zoneTitle = "";
-    if (appState.currentLevel >= 3) {
-      const zoneCounts = aggregateRoutesInSameZone();
-      zonePieData = createPieData(zoneCounts);
-      // Get the zone from the first stop of the selected route, if available.
-      const stopsForSelectedRoute = appState.stationStops.filter(s => s.route_id === appState.selectedRoute);
-      if (stopsForSelectedRoute.length) {
-        zoneTitle = `Zone ${stopsForSelectedRoute[0].zone_id}`;
-      }
-    }
-    renderPieChart("pieChartLevel3", zonePieData);
-    renderPieTitle("pieChartLevel3", zoneTitle);
+    // Pie 2: Departure Clock
+    const pie2Raw = aggregateDepartureTimeIntervals(level);
+    const pie2Data = createPieData(pie2Raw, 0.5); // exclude <0.5% slivers
+    renderPieChart("pieChartLevel2", pie2Data, timeIntervalColors);
+    renderPieTitle("pieChartLevel2", "Departure Time (UTC)");
+
+    // Pie 3: Delivered vs Other (now for all levels)
+    const pie3Data = createPieData(aggregateDeliveredBinary(level));
+    renderPieChart("pieChartLevel3", pie3Data, packageStatusColorsBinary);
+    renderPieTitle("pieChartLevel3", "Delivered");
   }
 
-  // Expose the update function globally so it can be invoked on level transitions.
   window.updatePieCharts = updatePieCharts;
 
   document.addEventListener("DOMContentLoaded", () => {
     updatePieCharts();
   });
 
-  // Optionally update the charts periodically.
   setInterval(updatePieCharts, 2000);
 })();
