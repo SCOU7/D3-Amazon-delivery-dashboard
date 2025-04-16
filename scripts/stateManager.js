@@ -23,7 +23,8 @@ const appState = {
     zoneIds: new Set()
   },
 
-  filteredStationRoutes: []
+  filteredStationRoutes: [],
+  scatterAxes: { x: "total_transit_time_sec", y: "total_service_time_sec" }
 };
 
 /**

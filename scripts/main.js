@@ -36,4 +36,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   backBtn.addEventListener("click", () => {
     handleBackNavigation();
   });
+
+  document.getElementById("switchAxesButton").addEventListener("click", () => {
+    const ax = appState.scatterAxes;
+    [ax.x, ax.y] = [ax.y, ax.x];
+    renderScatterPlot();
+  });
 });
