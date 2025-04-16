@@ -3,7 +3,7 @@
 function formatTime(seconds) {
   seconds = Math.round(seconds);
   const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
+  const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${s}s`;
@@ -71,10 +71,10 @@ function initMap() {
     const pkgCount = appState.routePackages.length;
     const score = route ? route.route_score : "N/A";
 
-    // ➕ Compute total service time
+    // Compute total service time.
     const totalService = d3.sum(appState.routePackages, p => +p.planned_service_time_seconds || 0);
 
-    // ➕ Compute total transit time
+    // Compute total transit time from travel times along the sequence.
     let totalTransit = 0;
     const travelTimes = appState.routeTravelTimes;
     const seq = appState.stationSequences
@@ -98,25 +98,24 @@ function initMap() {
   }
 }
 
-
 /**
- * renderLevel1Stations():
- * Draws station circles for the entire nation-level view.
- * Each station is sized by its total_routes.
+ * Renders the nation-level station circles.
+ * Each station circle now includes a data attribute for linking.
  */
 function renderLevel1Stations() {
   if (!mapSvg || !projection) return;
 
-  const stationData = appState.stations; // e.g. [{ station_code, lat, lng, total_routes }, ...]
+  const stationData = appState.stations;
 
   const stationGroup = mapSvg.append("g")
     .attr("class", "station-group");
 
-    stationGroup.selectAll("circle.station-circle")
+  stationGroup.selectAll("circle.station-circle")
     .data(stationData)
     .enter()
     .append("circle")
     .attr("class", "station-circle")
+    .attr("data-station", d => d.station_code) // Added linking attribute.
     .attr("cx", d => projection([d.lng, d.lat])[0])
     .attr("cy", d => projection([d.lng, d.lat])[1])
     .attr("r", d => Math.sqrt(d.total_routes) * 0.5)
@@ -140,28 +139,17 @@ function renderLevel1Stations() {
         .attr("stroke", "#333")
         .attr("stroke-width", 1);
   
-      setMapMonitorHover("")
+      setMapMonitorHover("");
     })
     .on("click", (event, d) => {
       handleStationClick(d.station_code);
     });
-  
 }
 
 /**
- * handleStationClick(stationCode):
- * - Clears old station data in appState
- * - Retrieves preloaded data from appState.stationData[stationCode]
- * - Sets appState fields (stationStops, stationSequences, etc.)
- * - Switches to Level 2 and re-initializes the map
+ * When a station is clicked, load its data and switch to Level 2.
  */
-/**
- * handleStationClick(stationCode):
- * - Loads station data into state
- * - Applies current filters immediately
- * - Switches to Level 2
- */
-async function handleStationClick(stationCode) {
+function handleStationClick(stationCode) {
   clearStationData();
 
   const stationObj = appState.stationData[stationCode];
@@ -175,23 +163,11 @@ async function handleStationClick(stationCode) {
   appState.stationStops = stationObj.stops;
   appState.stationSequences = stationObj.sequences;
 
-  // 🆕 Initialize filters and populate dynamic zones
-  initializeFilters(); // loads filter UI
-  populateZoneOptionsFromCurrentStation(); // populates zones from this station
-
-  // 🆕 Immediately apply filters for initial map/pie rendering
-  applyFilters();
-
-  // Switch to Level 2
   setLevel(2);
-  initMap();
 }
 
-
 /**
- * fitMapToStationStops(width, height):
- * - Looks at appState.stationStops
- * - Creates a geoMercator projection that "fits" all stops in the station area
+ * Fit the map projection to the station stops.
  */
 function fitMapToStationStops(width, height) {
   const stops = appState.stationStops;
@@ -217,31 +193,25 @@ function fitMapToStationStops(width, height) {
   };
 
   projection = d3.geoMercator();
-  const path = d3.geoPath(projection);
-  projection.fitExtent(
-    [[20, 20], [width - 20, height - 20]],
-    geojson
-  );
+  projection.fitExtent([[20, 20], [width - 20, height - 20]], geojson);
 }
 
 /**
- * renderLevel2StationRoutes():
- * - Draws each route's path in black (station->first) then white (rest of the route)
- * - Draws red circles for each stop
- * - Optimized using a dictionary for fast lookups
+ * Renders station routes at Level 2.
+ * Each route group includes a data attribute for linking.
  */
 function renderLevel2StationRoutes() {
   if (!mapSvg || !projection) return;
 
   const { stationStops, stationSequences, filteredStationRoutes } = appState;
 
-  // Build stop dictionary for quick lookups
+  // Build a quick lookup dictionary for stops.
   const stopDict = {};
   for (const s of stationStops) {
     stopDict[s.route_id + "|" + s.stop_id] = s;
   }
 
-  // Group sequences by route_id
+  // Group sequences by route_id using only the filtered routes.
   const filteredRouteIDs = new Set(filteredStationRoutes.map(r => r.route_id));
   const filteredSequences = stationSequences.filter(s => filteredRouteIDs.has(s.route_id));
   const seqByRoute = d3.group(filteredSequences, d => d.route_id);
@@ -249,45 +219,46 @@ function renderLevel2StationRoutes() {
   const routesGroup = mapSvg.append("g").attr("class", "routes-group");
 
   for (const [route_id, seqArray] of seqByRoute.entries()) {
-    // Sort stops by sequence_order
+    // Sort the sequence array by the order.
     seqArray.sort((a, b) => d3.ascending(a.sequence_order, b.sequence_order));
 
     const stopsForRoute = seqArray.map(seq => stopDict[seq.route_id + "|" + seq.stop_id])
                                   .filter(d => d);
     if (stopsForRoute.length < 2) continue;
 
-    // Look up additional route details from stationRoutes, if available.
     const routeData = appState.stationRoutes.find(r => r.route_id === route_id);
 
+    // Append a group for this route with a data attribute.
     const routeGroup = routesGroup.append("g")
-  .attr("class", "route-group")
-  .on("mouseover", function () {
-    // Dim all other routes
-    routesGroup.selectAll(".route-group").classed("dimmed", true);
-    d3.select(this).classed("dimmed", false); // Undim current
-    const infoHtml = `
-      <p><strong>Route ID:</strong> ${route_id}</p>
-      ${routeData ? `
-        <p>Date: ${routeData.date}</p>
-        <p>Departure: ${routeData.departure_time_utc}</p>
-        <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
-        <p>Route Score: ${routeData.route_score}</p>` : ''}
-      <p>Total Stops: ${stopsForRoute.length}</p>
-    `;
-    setMapMonitorHover(infoHtml);
-  })
-  .on("mouseout", function () {
-    routesGroup.selectAll(".route-group").classed("dimmed", false);
-    const infoHtml = `
-      <p><strong>Station:</strong> ${appState.selectedStation}</p>
-      <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
-      <p><em>Hover over stops to see zone ID</em></p>
-    `;
-    setMapMonitorHover("");
-  })
-  .on("click", () => {
-    handleRouteClick(route_id);
-  });
+      .attr("class", "route-group")
+      .attr("data-route-id", route_id) // Added linking attribute.
+      .on("mouseover", function () {
+        // Dim all route groups.
+        routesGroup.selectAll(".route-group").classed("dimmed", true);
+        d3.select(this).classed("dimmed", false);
+        const infoHtml = `
+          <p><strong>Route ID:</strong> ${route_id}</p>
+          ${routeData ? `
+            <p>Date: ${routeData.date}</p>
+            <p>Departure: ${routeData.departure_time_utc}</p>
+            <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
+            <p>Route Score: ${routeData.route_score}</p>` : ''}
+          <p>Total Stops: ${stopsForRoute.length}</p>
+        `;
+        setMapMonitorHover(infoHtml);
+      })
+      .on("mouseout", function () {
+        routesGroup.selectAll(".route-group").classed("dimmed", false);
+        const infoHtml = `
+          <p><strong>Station:</strong> ${appState.selectedStation}</p>
+          <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
+          <p><em>Hover over stops to see zone ID</em></p>
+        `;
+        setMapMonitorHover("");
+      })
+      .on("click", () => {
+        handleRouteClick(route_id);
+      });
 
     const lineGenerator = d3.line();
     const coords = stopsForRoute.map(s => projection([s.lng, s.lat]));
@@ -336,45 +307,31 @@ function renderLevel2StationRoutes() {
   }
 }
 
-/**
- * handleRouteClick(route_id):
- * - Sets appState.selectedRoute = route_id
- * - Loads route-specific travel_times
- * - Finds the subset of stationStops & packages for that route
- * - Switches to Level 3
- */
-async function handleRouteClick(route_id) {
+function handleRouteClick(route_id) {
   clearRouteData();
   appState.selectedRoute = route_id;
 
-  // Build routeStops array
+  // Build routeStops array.
   const routeStops = appState.stationStops.filter(s => s.route_id === route_id);
   appState.routeStops = routeStops;
 
-  // Load packages for this route
   const allPackages = appState.stationData[appState.selectedStation].packages || [];
   const routePackages = allPackages.filter(p => p.route_id === route_id);
   appState.routePackages = routePackages;
 
-  // Load travel times
-  try {
-    const travelTimes = await loadRouteTravelTimes(appState.selectedStation, route_id);
-    appState.routeTravelTimes = travelTimes;
-  } catch (err) {
-    console.error("Error loading route travel times:", err);
-    appState.routeTravelTimes = null;
-  }
-
-  setLevel(3);
-  initMap();
+  // Load travel times and then switch to Level 3.
+  loadRouteTravelTimes(appState.selectedStation, route_id)
+    .then(travelTimes => {
+      appState.routeTravelTimes = travelTimes;
+      setLevel(3);
+    })
+    .catch(err => {
+      console.error("Error loading route travel times:", err);
+      appState.routeTravelTimes = null;
+      setLevel(3);
+    });
 }
 
-/**
- * renderLevel3Route():
- * - Uses appState.routeStops + appState.routeTravelTimes
- * - Colors each link by ratio = travel_time / distance
- * - Colors each stop by "average service time"
- */
 function renderLevel3Route() {
   if (!mapSvg) return;
 
@@ -441,7 +398,7 @@ function renderLevel3Route() {
         setMapMonitorHover(infoHtml);
       })
       .on("mouseout", () => {
-        setMapMonitorHover("")
+        setMapMonitorHover("");
       });
   }
 
@@ -481,10 +438,6 @@ function renderLevel3Route() {
     });
 }
 
-/**
- * fitMapToRouteStops():
- * Fit bounding box to the route's stops, which are in appState.routeStops
- */
 function fitMapToRouteStops() {
   const mapContainer = d3.select("#mapViewport");
   const width = mapContainer.node().clientWidth;
@@ -510,10 +463,6 @@ function fitMapToRouteStops() {
   projection.fitExtent([[20, 20], [width - 20, height - 20]], geojson);
 }
 
-/**
- * distanceBetweenStops(a, b):
- * Calculates the distance between two stops using the Haversine formula.
- */
 function distanceBetweenStops(a, b) {
   const R = 6371; // Earth's radius in km
   const lat1 = a.lat * Math.PI / 180, lat2 = b.lat * Math.PI / 180;
@@ -529,10 +478,6 @@ function distanceBetweenStops(a, b) {
   return dist;
 }
 
-/**
- * trafficColorScale(ratio):
- * Returns a color based on the traffic ratio (travel time / distance).
- */
 function trafficColorScale(ratio) {
   return d3.scaleLinear()
     .domain([0, 300, 600])
@@ -540,13 +485,9 @@ function trafficColorScale(ratio) {
     .clamp(true)(ratio);
 }
 
-/**
- * serviceColorScale(avgService):
- * Returns a color based on average service time.
- */
-function serviceColorScale(seconds) {
+function serviceColorScale(avgService) {
   return d3.scaleLinear()
     .domain([0, 60, 300])
     .range(["#ccece6", "#66c2a4", "#238b45"])
-    .clamp(true)(seconds);
+    .clamp(true)(avgService);
 }

@@ -17,7 +17,7 @@ function formatTimeShort(seconds) {
   return m % 60 === 0 ? `${h}h` : `${h}h ${m % 60}m`;
 }
 
-// Append a tooltip element to the body (only once)
+// Append a tooltip element (only once).
 const tooltip = d3.select("body")
   .append("div")
   .attr("class", "tooltip")
@@ -43,26 +43,26 @@ function renderScatterPlot() {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // Determine the routes to plot based on the current level.
+  // Determine routes based on current level.
   let routePoints = [];
   const level = appState.currentLevel;
   if (level === 1) {
-    // Level 1: Show all routes across stations.
+    // Level 1: All routes across stations.
     routePoints = Object.values(appState.stationData).flatMap(st => st.routes);
   } else if (level === 2) {
-    // Level 2: Use the station's filtered routes.
+    // Level 2: Only the filtered routes for the selected station.
     routePoints = appState.filteredStationRoutes || [];
   } else if (level === 3) {
-    // Level 3: Show only the selected route.
+    // Level 3: Only the selected route.
     const route = appState.stationRoutes.find(r => r.route_id === appState.selectedRoute);
     routePoints = route ? [route] : [];
   }
+  // Filter out routes missing transit or service time data.
   routePoints = routePoints.filter(r =>
     r.total_service_time_sec != null &&
     r.total_transit_time_sec != null
   );
 
-  // If no data is available, show a message.
   if (routePoints.length === 0) {
     svg.append("text")
       .attr("x", width / 2)
@@ -73,12 +73,11 @@ function renderScatterPlot() {
     return;
   }
 
-  // Set up x and y scales and axes.
+  // Set up scales and axes.
   const xScale = d3.scaleLinear()
     .domain(d3.extent(routePoints, d => d.total_transit_time_sec))
     .nice()
     .range([0, width]);
-
   const yScale = d3.scaleLinear()
     .domain(d3.extent(routePoints, d => d.total_service_time_sec))
     .nice()
@@ -94,7 +93,6 @@ function renderScatterPlot() {
   svg.append("g")
     .attr("transform", `translate(0, ${height})`)
     .call(d3.axisBottom(xScale).tickValues(xTicks).tickFormat(formatTimeShort));
-
   svg.append("g")
     .call(d3.axisLeft(yScale).tickValues(yTicks).tickFormat(formatTimeShort));
 
@@ -104,7 +102,6 @@ function renderScatterPlot() {
     .attr("text-anchor", "middle")
     .style("font-size", "12px")
     .text("Total Transit Time");
-
   svg.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
@@ -112,7 +109,6 @@ function renderScatterPlot() {
     .attr("text-anchor", "middle")
     .style("font-size", "12px")
     .text("Total Service Time");
-
   svg.append("text")
     .attr("x", width / 2)
     .attr("y", -10)
@@ -121,12 +117,12 @@ function renderScatterPlot() {
     .style("font-weight", "bold")
     .text("Transit vs. Service Time per Route");
 
-  // Data join for the route dots keyed by route_id.
+  // Data join for dots (using route_id as key).
   const dots = svg.selectAll("circle.route-dot")
     .data(routePoints, d => d.route_id);
 
-  // ENTER: Append new circles with an initial radius of 0 then transition to radius 4.
-  const dotsEnter = dots.enter()
+  // ENTER: Append new circles with an initial radius of 0, then transition to radius 4.
+  dots.enter()
     .append("circle")
     .attr("class", "route-dot")
     .attr("cx", d => xScale(d.total_transit_time_sec))
@@ -135,7 +131,7 @@ function renderScatterPlot() {
     .attr("fill", "red")
     .attr("opacity", 0.8)
     .on("mouseover", (event, d) => {
-      // Show tooltip with route and station information.
+      console.log("[scatterPlot] Mouseover on route", d.route_id, "station", d.station_code);
       tooltip.html(`
         <strong>Route ID:</strong> ${d.route_id}<br/>
         <strong>Station:</strong> ${d.station_code || "N/A"}<br/>
@@ -146,19 +142,26 @@ function renderScatterPlot() {
       `)
       .style("opacity", 1);
 
-      // Highlight the corresponding map element.
       if (appState.currentLevel === 1) {
-        // For level 1 (nation view), highlight the matching station circle.
-        d3.select(`circle.station-circle[data-station='${d.station_code}']`)
-          .transition().duration(250)
-          .attr("stroke", "gold")
-          .attr("stroke-width", 3);
+        // In Level 1: Find and highlight the matching station circle.
+        const sel = d3.select(`circle.station-circle[data-station='${d.station_code}']`);
+        if (sel.empty()) {
+          console.log("[scatterPlot] Cannot find station element for:", d.station_code);
+        } else {
+          console.log("[scatterPlot] Found station element for:", d.station_code);
+          // Add a CSS class for highlighting.
+          sel.classed("station-highlight", true);
+        }
       } else if (appState.currentLevel === 2) {
-        // For level 2 (station view), highlight the matching route group.
-        d3.select(`g.route-group[data-route-id='${d.route_id}']`)
-          .transition().duration(250)
-          .attr("stroke", "gold")
-          .attr("stroke-width", 3);
+        // In Level 2: Dim all route groups then remove dimming from the linked one.
+        d3.selectAll("g.route-group").classed("dimmed", true);
+        const target = d3.select(`g.route-group[data-route-id='${d.route_id}']`);
+        if (target.empty()) {
+          console.log("[scatterPlot] Cannot find route group for route:", d.route_id);
+        } else {
+          console.log("[scatterPlot] Found route group for route:", d.route_id);
+          target.classed("dimmed", false).classed("route-highlight", true);
+        }
       }
     })
     .on("mousemove", (event) => {
@@ -166,31 +169,26 @@ function renderScatterPlot() {
              .style("top", (event.pageY + 10) + "px");
     })
     .on("mouseout", (event, d) => {
+      console.log("[scatterPlot] Mouseout on route", d.route_id);
       tooltip.style("opacity", 0);
-      // Remove highlight from the corresponding map element.
       if (appState.currentLevel === 1) {
         d3.select(`circle.station-circle[data-station='${d.station_code}']`)
-          .transition().duration(250)
-          .attr("stroke", "#333")
-          .attr("stroke-width", 1);
+          .classed("station-highlight", false);
       } else if (appState.currentLevel === 2) {
-        d3.select(`g.route-group[data-route-id='${d.route_id}']`)
-          .transition().duration(250)
-          .attr("stroke", "black")
-          .attr("stroke-width", 2);
+        d3.selectAll("g.route-group").classed("dimmed", false).classed("route-highlight", false);
       }
     })
     .transition()
     .duration(1000)
     .attr("r", 4);
 
-  // UPDATE: Transition any existing circles to new positions if needed.
+  // UPDATE: Transition positions for existing dots.
   dots.transition()
     .duration(1000)
     .attr("cx", d => xScale(d.total_transit_time_sec))
     .attr("cy", d => yScale(d.total_service_time_sec));
 
-  // EXIT: Transition circles that no longer exist to radius 0 before removal.
+  // EXIT: Transition and remove dots that are no longer needed.
   dots.exit()
     .transition()
     .duration(1000)

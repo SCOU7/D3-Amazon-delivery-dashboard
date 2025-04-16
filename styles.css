@@ -125,3 +125,14 @@ html, body {
 .route-group.dimmed circle {
   opacity: 0.01 !important;
 }
+
+/* Highlight for station circles (Level 1) */
+.station-highlight {
+  stroke: #ffcc00 !important;
+  stroke-width: 3 !important;
+}
+
+/* Dim effect for route groups when not highlighted */
+.dimmed {
+  opacity: 0.3;
+}
