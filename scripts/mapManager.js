@@ -44,6 +44,18 @@ function initMap() {
     .attr("width", width)
     .attr("height", height);
 
+  mapSvg.append("defs").append("marker")
+  .attr("id", "arrowhead")
+  .attr("viewBox", "0 -5 10 10")
+  .attr("refX", 10)
+  .attr("refY", 0)
+  .attr("markerWidth", 3)
+  .attr("markerHeight", 3)
+  .attr("orient", "auto")
+  .append("path")
+  .attr("d", "M0,-5L10,0L0,5")
+  .attr("fill", "currentColor");
+
   zoomGroup = mapSvg.append("g")
     .attr("class", "zoom-group");
 
@@ -374,13 +386,15 @@ function renderLevel2StationRoutes() {
         .attr("d", lineGenerator)
         .attr("fill", "none")
         .attr("stroke", "black")
-        .attr("stroke-width", 2);
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrowhead)")
     }
     if (coords.length > 2) {
       routeGroup.append("path")
         .datum(coords.slice(1))
         .attr("d", lineGenerator)
         .attr("class", "route-segment")
+        .attr("marker-end", "url(#arrowhead)")
     }
 
     routeGroup.selectAll("circle.stop-point")
@@ -483,6 +497,7 @@ function renderLevel3Route() {
       .attr("class", "level3-link")
       .attr("d", lineGenerator)
       .attr("stroke", linkColor)
+      .attr("marker-end", "url(#arrowhead)")
       .on("mouseover", () => {
         const infoHtml = 
           `<p><strong>Link Information</strong></p>
