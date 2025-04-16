@@ -38,7 +38,7 @@
 
   // Station aggregation using reduce.
   function aggregateStationRoutes() {
-    return (appState.stationRoutes || []).reduce((acc, route) => {
+    return (appState.filteredStationRoutes || []).reduce((acc, route) => {
       const score = route.route_score;
       acc[score] = (acc[score] || 0) + 1;
       return acc;

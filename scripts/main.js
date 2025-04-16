@@ -8,14 +8,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { stationAggregates, stationData } = await preloadAllData();
 
     // 2) Store them in state
-    appState.stations = stationAggregates;      // Level 1 aggregates
-    appState.stationData = stationData;         // Full details for each station
+    appState.stations = stationAggregates;
+    appState.stationData = stationData;
 
     console.log("All station data preloaded. Found", appState.stations.length, "stations.");
 
-    // 3) Set initial level to 1 and init map
+    // 3) Set initial level and map
     setLevel(1);
     initMap();
+
+    // 4) Initialize filter UI
+    initializeFilters();
 
     console.log("Click a station circle to jump to Level 2 instantly!");
   }
@@ -23,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error during preloading:", err);
   }
 
-  // Add back-button logic
+  // Back button logic
   const backBtn = document.getElementById("backButton");
   backBtn.addEventListener("click", () => {
     handleBackNavigation();

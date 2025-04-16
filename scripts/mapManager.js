@@ -99,8 +99,14 @@ function renderLevel1Stations() {
  * - Sets appState fields (stationStops, stationSequences, etc.)
  * - Switches to Level 2 and re-initializes the map
  */
+/**
+ * handleStationClick(stationCode):
+ * - Loads station data into state
+ * - Applies current filters immediately
+ * - Switches to Level 2
+ */
 async function handleStationClick(stationCode) {
-  clearStationData(); // function from stateManager.js
+  clearStationData();
 
   const stationObj = appState.stationData[stationCode];
   if (!stationObj) {
@@ -108,16 +114,22 @@ async function handleStationClick(stationCode) {
     return;
   }
 
-  // Populate appState for the selected station
   appState.selectedStation = stationCode;
   appState.stationRoutes = stationObj.routes;
   appState.stationStops = stationObj.stops;
   appState.stationSequences = stationObj.sequences;
 
+  // 🆕 Automatically filter station routes immediately using active filters
+  const selectedScores = appState.filters.routeScores;
+  appState.filteredStationRoutes = stationObj.routes.filter(r =>
+    selectedScores.has(r.route_score)
+  );
+
   // Switch to Level 2
   setLevel(2);
-  initMap();
+  initMap(); // re-render with filtered data
 }
+
 
 /**
  * fitMapToStationStops(width, height):
@@ -164,7 +176,7 @@ function fitMapToStationStops(width, height) {
 function renderLevel2StationRoutes() {
   if (!mapSvg || !projection) return;
 
-  const { stationStops, stationSequences } = appState;
+  const { stationStops, stationSequences, filteredStationRoutes } = appState;
 
   // Build stop dictionary for quick lookups
   const stopDict = {};
@@ -173,7 +185,10 @@ function renderLevel2StationRoutes() {
   }
 
   // Group sequences by route_id
-  const seqByRoute = d3.group(stationSequences, d => d.route_id);
+  const filteredRouteIDs = new Set(filteredStationRoutes.map(r => r.route_id));
+  const filteredSequences = stationSequences.filter(s => filteredRouteIDs.has(s.route_id));
+  const seqByRoute = d3.group(filteredSequences, d => d.route_id);
+
   const routesGroup = mapSvg.append("g").attr("class", "routes-group");
 
   for (const [route_id, seqArray] of seqByRoute.entries()) {
