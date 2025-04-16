@@ -208,11 +208,13 @@ button:hover {
 }
 
 
+
+
 /*  */
 /* Sation Circles (Level 1) */
 /*  */
 .station-circle {
-  fill: steelblue;
+  fill: rgb(159, 185, 206);
   stroke: #333;
   stroke-width: 1;
   cursor: pointer;
@@ -242,10 +244,11 @@ button:hover {
 }
 
 
+
+
 /*  */
 /* Routes (Level 2) */
 /*  */
-/* Default route path segments */
 .route-group path:first-of-type {
   stroke: #FFB300;            /* Warm amber */
   stroke-width: 0.5;            /* Thin */
@@ -253,7 +256,6 @@ button:hover {
   transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
 }
 
-/* Link: Stop → Stop */
 .route-group path:nth-of-type(2) {
   stroke: #90CAF9;            /* Light blue */
   stroke-width: 0.5;            /* Thin */
@@ -290,6 +292,45 @@ button:hover {
   fill: none;
 }
 
+
+
+
+/*  */
+/* Level 3 */
+/*  */
+.level3-route path {
+  fill: none;
+  stroke-width: 0.5;
+  opacity: 0.9;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.level3-route path:hover {
+  stroke-width: 1;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px #ffa726); /* orange glow */
+}
+
+.level3-route .node {
+  r: 0.7;
+  opacity: 1;
+  transition: all 0.2s ease;
+}
+
+.level3-route .node:hover {
+  r: 1.5;
+  opacity: 1;
+  stroke: #fff176; /* soft yellow border */
+  stroke-width: 0.5;
+  filter: drop-shadow(0 0 3px #fff176);
+}
+
+
+
+
+/*  */
+/* Grid Lines */
+/*  */
 .x.grid line,
 .y.grid line {
   stroke: #555;
@@ -304,7 +345,6 @@ button:hover {
   stroke-dasharray: none;
   stroke-opacity: 0.2;
 }
-
 
 .axis path,
 .axis line {

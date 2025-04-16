@@ -477,10 +477,9 @@ function renderLevel3Route() {
 
     routeGroup.append("path")
       .datum(segmentCoords)
+      .attr("class", "level3-link")
       .attr("d", lineGenerator)
-      .attr("fill", "none")
       .attr("stroke", linkColor)
-      .attr("stroke-width", 3)
       .on("mouseover", () => {
         const infoHtml = 
           `<p><strong>Link Information</strong></p>
