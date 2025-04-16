@@ -1,5 +1,6 @@
 // scripts/dataLoader.js
 
+// Station codes defined as before
 const STATION_CODES = [
   "DAU1", "DBO1", "DBO2", "DBO3", "DCH1", "DCH2", "DCH3", "DCH4",
   "DLA3", "DLA4", "DLA5", "DLA7", "DLA8", "DLA9",
@@ -8,12 +9,27 @@ const STATION_CODES = [
 
 /**
  * preloadAllData():
- * Loads routes, stops, sequences, packages for each station.
- * Computes total_routes and approximates station location.
+ *  1) For each station code, load routes.csv, stops.csv, actual_sequences.csv.
+ *  2) Compute:
+ *     - total_routes (simply routes.length)
+ *     - approximate lat/lng for station (average of stops, or find "Station" row)
+ *  3) Build two structures:
+ *     a) stationAggregates[] for Level 1, each with { station_code, lat, lng, total_routes }
+ *     b) stationData{} keyed by stationCode => { routes, stops, sequences, lat, lng, total_routes }
+ *
+ * Returns: { stationAggregates, stationData }
  */
 async function preloadAllData() {
   const stationData = {};
   const stationAggregates = [];
+
+  // 🆕 Load precomputed route metrics CSV
+  const routeMetrics = await d3.csv("processed_data/route_time_metrics.csv", r => ({
+    route_id: r.route_id,
+    total_service_time_sec: +r.total_service_time_sec || 0,
+    total_transit_time_sec: +r.total_transit_time_sec || 0
+  }));
+  const routeMetricsMap = Object.fromEntries(routeMetrics.map(r => [r.route_id, r]));
 
   const allPromises = STATION_CODES.map(async (stationCode) => {
     try {
@@ -53,6 +69,14 @@ async function preloadAllData() {
         }))
       ]);
 
+      // 🆕 Attach precomputed times to routes
+      routes.forEach(route => {
+        const metrics = routeMetricsMap[route.route_id];
+        route.total_service_time_sec = metrics ? metrics.total_service_time_sec : null;
+        route.total_transit_time_sec = metrics ? metrics.total_transit_time_sec : null;
+      });
+
+      // Calculate station-level location and route count
       const total_routes = routes.length;
       let avgLat = 0, avgLng = 0;
       if (stops.length > 0) {
@@ -95,20 +119,28 @@ async function preloadAllData() {
   };
 }
 
+// scripts/dataLoader.js
+
 /**
  * loadRouteTravelTimes(stationCode, route_id):
- * Reads travel_times/RouteID_xxx_travel_times.csv
+ *   Reads travel_times/RouteID_xxx_travel_times.csv
+ *   Returns a dictionary: travelTimes[from_stop][to_stop] = numeric_time
  */
 async function loadRouteTravelTimes(stationCode, route_id) {
   const filePath = `processed_data/${stationCode}/travel_times/${route_id}_travel_times.csv`;
+
   const raw = await d3.csv(filePath);
 
+  // raw[0] example: { from_stop: "AA", "AF": "476.5", "AI": "57.7", ... }
+  // We'll build a nested dictionary, e.g. travelTimes["AA"]["AF"] = 476.5
   const travelTimes = {};
   for (const row of raw) {
     const fromStop = row["from_stop"];
     travelTimes[fromStop] = {};
+    // Each column is a to_stop
     for (const [key, val] of Object.entries(row)) {
-      if (key === "from_stop") continue;
+      if (key === "from_stop") continue; // skip
+      // parse val to number
       travelTimes[fromStop][key] = +val;
     }
   }

@@ -32,7 +32,6 @@ function initMap() {
     fitMapToStationStops(width, height);
     renderLevel2StationRoutes();
 
-    // ✅ Static info for Level 2
     const station = appState.selectedStation;
     const totalRoutes = appState.stationRoutes.length;
     setMapMonitorBase(`
@@ -43,7 +42,6 @@ function initMap() {
   } else if (appState.currentLevel === 3) {
     renderLevel3Route();
 
-    // ✅ Static info for Level 3
     const routeId = appState.selectedRoute;
     const route = appState.stationRoutes.find(r => r.route_id === routeId);
     const stops = appState.stationStops.filter(s => s.route_id === routeId);
@@ -56,11 +54,29 @@ function initMap() {
     const pkgCount = appState.routePackages.length;
     const score = route ? route.route_score : "N/A";
 
+    // ➕ Compute total service time
+    const totalService = d3.sum(appState.routePackages, p => +p.planned_service_time_seconds || 0);
+
+    // ➕ Compute total transit time
+    let totalTransit = 0;
+    const travelTimes = appState.routeTravelTimes;
+    const seq = appState.stationSequences
+      .filter(s => s.route_id === routeId)
+      .sort((a, b) => a.sequence_order - b.sequence_order);
+    for (let i = 0; i < seq.length - 1; i++) {
+      const from = seq[i].stop_id;
+      const to = seq[i + 1].stop_id;
+      const travel = travelTimes?.[from]?.[to];
+      if (travel != null) totalTransit += travel;
+    }
+
     setMapMonitorBase(`
       <p><strong>Route ID:</strong> ${routeId}</p>
       <p><strong>Zone:</strong> ${zoneLabel}</p>
       <p><strong>Packages:</strong> ${pkgCount}</p>
       <p><strong>Route Score:</strong> ${score}</p>
+      <p><strong>Transit Time:</strong> ${totalTransit.toFixed(1)} sec</p>
+      <p><strong>Service Time:</strong> ${totalService.toFixed(1)} sec</p>
     `);
   }
 }
