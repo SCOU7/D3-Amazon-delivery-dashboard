@@ -11,7 +11,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     appState.stations = stationAggregates;
     appState.stationData = stationData;
     if (typeof renderScatterPlot === "function") {
+      console.log("hello")
       renderScatterPlot(); // now data is available
+      console.log("bye")
     }
 
     console.log("All station data preloaded. Found", appState.stations.length, "stations.");
