@@ -12,8 +12,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { stationAggregates, stationData } = await preloadAllData();
     appState.stations = stationAggregates;
     appState.stationData = stationData;
+<<<<<<< HEAD
 
     renderScatterPlot();
+=======
+    if (typeof window.renderScatterPlot === "function") { 
+      console.log("hello")
+      window.renderScatterPlot(); 
+      console.log("bye")
+    }
+    
+    console.log("All station data preloaded. Found", appState.stations.length, "stations.");
+
+    // 3) Set initial level and map
+>>>>>>> 552293ff1bf1ce97284cd45b116a027d5a24de7b
     setLevel(1);
     initMap();
     initializeFilters();
