@@ -1,7 +1,8 @@
 // scripts/scatterPlot.js
-import { appState } from './stateManager.js';
+import { appState, setLevel } from './stateManager.js';
 export { renderScatterPlot };
 import { handleRouteClick } from './mapManager.js';
+import { clearStationData } from './stateManager.js';
 
 function getHalfHourTicks([min, max]) {
   const start = Math.ceil(min / 1800) * 1800;
@@ -24,10 +25,8 @@ function formatTime(seconds) {
 }
 
 function formatTimeTiny(seconds) {
-  seconds = Math.round(seconds);
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return h > 0 ? `${h}h${m > 0 ? m + 'm' : ''}` : `${m}m`;
+  const hours = seconds / 3600;
+  return `${+hours.toFixed(1)}h`;
 }
 
 // Append a tooltip element (only once).
@@ -89,7 +88,9 @@ function renderScatterPlot() {
     .tickFormat(formatTimeTiny));
 
   svg.append("g")
-    .call(d3.axisLeft(yScale).tickFormat(formatTimeTiny));
+  .call(d3.axisLeft(yScale)
+    .tickValues(getHalfHourTicks(yScale.domain()))
+    .tickFormat(formatTimeTiny));
 
   svg.append("text")
     .attr("x", width / 2)
@@ -158,8 +159,26 @@ function renderScatterPlot() {
     })
     .on("click", (event, d) => {
       tooltip.style("opacity", 0);
+    
       if (appState.currentLevel === 2) {
-        handleRouteClick(d.route_id); // jump to Level 3
+        handleRouteClick(d.route_id);  // already implemented
+      } else if (appState.currentLevel === 1) {
+        // Move to Level 2 by simulating a station click
+        const stationCode = d.station_code;
+        const stationObj = appState.stationData[stationCode];
+        if (!stationObj) {
+          console.error(`No station data found for ${stationCode}`);
+          return;
+        }
+    
+        clearStationData();
+    
+        appState.selectedStation = stationCode;
+        appState.stationRoutes = stationObj.routes;
+        appState.stationStops = stationObj.stops;
+        appState.stationSequences = stationObj.sequences;
+    
+        setLevel(2);
       }
     })
     .transition()
