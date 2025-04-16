@@ -1,6 +1,7 @@
 // scripts/scatterPlot.js
 import { appState } from './stateManager.js';
 export { renderScatterPlot };
+import { handleRouteClick } from './mapManager.js';
 
 function getHalfHourTicks([min, max]) {
   const start = Math.ceil(min / 1800) * 1800;
@@ -115,7 +116,7 @@ function renderScatterPlot() {
   const dots = svg.selectAll("circle.route-dot")
     .data(routePoints, d => d.route_id);
 
-  dots.enter()
+    dots.enter()
     .append("circle")
     .attr("class", "route-dot")
     .attr("cx", d => xScale(d[xField]))
@@ -131,7 +132,7 @@ function renderScatterPlot() {
         <strong>Service Time:</strong> ${formatTime(d.total_service_time_sec)}
       `)
       .style("opacity", 1);
-
+  
       if (appState.currentLevel === 1) {
         d3.select(`circle.station-circle[data-station='${d.station_code}']`)
           .classed("station-highlight", true);
@@ -153,6 +154,12 @@ function renderScatterPlot() {
           .classed("station-highlight", false);
       } else if (appState.currentLevel === 2) {
         d3.selectAll("g.route-group").classed("dimmed", false).classed("route-highlight", false);
+      }
+    })
+    .on("click", (event, d) => {
+      tooltip.style("opacity", 0);
+      if (appState.currentLevel === 2) {
+        handleRouteClick(d.route_id); // jump to Level 3
       }
     })
     .transition()

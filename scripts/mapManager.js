@@ -587,4 +587,4 @@ function serviceColorScale(avgService) {
     .clamp(true)(avgService);
 }
 
-export { initMap };
+export { initMap, handleRouteClick };
