@@ -10,6 +10,8 @@ html, body {
   width: 100%;
   height: 100%;
   font-family: Arial, sans-serif;
+  background-color: #1c1c2e;  /* Dark background: a dark, slightly purple tone */
+  color: #e0e0e0;           /* Light text for contrast */
 }
 
 /*  ==========  LAYOUT  ==========  */
@@ -19,7 +21,7 @@ html, body {
   height: 30%;
   position: relative;
   padding: 1% 1%;
-  border-bottom: 2px solid #ccc; /* horizontal rule */
+  border-bottom: 2px solid #444; /* adjusted for dark theme */
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -33,6 +35,7 @@ html, body {
   position: relative;
   display: flex;
   flex-direction: row;
+  background-color: #141421; /* Even darker background for map container */
 }
 
 /*  ==========  MONITOR SECTION: PIE CHARTS  ==========  */
@@ -41,18 +44,19 @@ html, body {
   flex-direction: row;
   width: 50%;
   height: 100%;
-  border-right: 2px solid #ccc; /* horizontal rule */
+  border-right: 2px solid #444; /* adjusted for dark theme */
 }
 
 .pie-chart-placeholder {
   width: 27%;
   height: 100%;
   margin: 0% 2.8%;
-  border: 1px solid #aaa;
+  border: 1px solid #666; /* lighter border for contrast */
   justify-content: center;
   text-align: center; 
   padding-top: 2%;
   padding-bottom: 4%;
+  background-color: #2a2a3d; /* a dark shade with a hint of purple/blue */
 }
 
 /*  ==========  MONITOR SECTION: SCATTER PLOT  ==========  */
@@ -60,50 +64,52 @@ html, body {
   width: 40%;
   height: 100%;
   margin: 0% 2.5%;
-  border: 1px dashed #aaa;
+  border: 1px dashed #666;  /* changed for readability */
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  background-color: #2a2a3d;
 }
 
 /*  ==========  MAP SECTION  ==========  */
 #leftSidebar, #rightSidebar {
   width: 20%;
   height: 100%;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid #444;
   box-sizing: border-box;
   padding: 2%;
+  background-color: #1e1e28; /* Dark sidebar background */
 }
 
 #mapLevelIndicator {
   height: 15%;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #444;
   margin-bottom: 10%;
 }
 
 #leftSidebar h3,
 #rightSidebar h3 {
   margin-bottom: 2%;
+  color: #e0e0e0;
 }
 
 #mapViewport {
   width: 60%;
   height: 100%;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid #444;
   box-sizing: border-box;
   margin-bottom: 2%;
-  overflow: hidden; /* or auto if we want scrollable */
+  overflow: hidden;
+  background-color: #141421;  /* Dark background for map viewport */
 }
 
-/*  ==========  FUTURE COLLAPSE CLASSES  ==========  
-   For future use:
+/*  ==========  FUTURE COLLAPSE CLASSES  ==========  */
+/* For future use:
    .collapsed { width: 0; display: none; } 
 */
 
-
-
-/* scripts/mapManager draws route lines. We can style them with classes if you like. */
+/* Styling the route links drawn by mapManager.js */
 .route-group path {
   cursor: pointer;
   opacity: 0.5;

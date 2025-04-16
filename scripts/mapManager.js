@@ -275,7 +275,7 @@ function renderLevel2StationRoutes() {
         .datum(coords.slice(1))
         .attr("d", lineGenerator)
         .attr("fill", "none")
-        .attr("stroke", "white")
+        .attr("stroke", "#ccc")
         .attr("stroke-width", 2);
     }
 
