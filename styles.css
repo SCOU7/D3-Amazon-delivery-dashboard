@@ -154,3 +154,14 @@ html, body {
   pointer-events: none;
   box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.3);
 }
+
+.x.grid line,
+.y.grid line {
+  stroke: #555;
+  stroke-opacity: 0.2;
+  shape-rendering: crispEdges;
+}
+.axis path,
+.axis line {
+  stroke: #888;
+}

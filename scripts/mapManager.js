@@ -18,6 +18,7 @@ function formatTimeShort(seconds) {
 }
 
 let mapSvg = null;
+let zoomGroup = null;  // New group to hold all zoomable map content.
 let projection = null;
 
 function setMapMonitorBase(htmlString) {
@@ -39,6 +40,18 @@ function initMap() {
     .attr("width", width)
     .attr("height", height);
 
+  // Create a dedicated group for all zoomable content.
+  zoomGroup = mapSvg.append("g")
+    .attr("class", "zoom-group");
+
+  // Add zoom behavior to the svg so that it transforms the zoomGroup.
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 20])
+    .on("zoom", (event) => {
+      zoomGroup.attr("transform", event.transform);
+    });
+  mapSvg.call(zoom);
+
   if (appState.currentLevel === 1) {
     projection = d3.geoMercator()
       .scale(700)
@@ -51,11 +64,11 @@ function initMap() {
 
     const station = appState.selectedStation;
     const totalRoutes = appState.stationRoutes.length;
-    setMapMonitorBase(`
-      <p><strong>Station:</strong> ${station}</p>
-      <p><strong>Total Routes:</strong> ${totalRoutes}</p>
-      <p><em>Hover over stops to see zone ID</em></p>
-    `);
+    setMapMonitorBase(
+      `<p><strong>Station:</strong> ${station}</p>
+       <p><strong>Total Routes:</strong> ${totalRoutes}</p>
+       <p><em>Hover over stops to see zone ID</em></p>`
+    );
   } else if (appState.currentLevel === 3) {
     renderLevel3Route();
 
@@ -87,14 +100,14 @@ function initMap() {
       if (travel != null) totalTransit += travel;
     }
 
-    setMapMonitorBase(`
-      <p><strong>Route ID:</strong> ${routeId}</p>
-      <p><strong>Zone:</strong> ${zoneLabel}</p>
-      <p><strong>Packages:</strong> ${pkgCount}</p>
-      <p><strong>Route Score:</strong> ${score}</p>
-      <p><strong>Transit Time:</strong> ${formatTime(totalTransit)}</p>
-      <p><strong>Service Time:</strong> ${formatTime(totalService)}</p>
-    `);
+    setMapMonitorBase(
+      `<p><strong>Route ID:</strong> ${routeId}</p>
+       <p><strong>Zone:</strong> ${zoneLabel}</p>
+       <p><strong>Packages:</strong> ${pkgCount}</p>
+       <p><strong>Route Score:</strong> ${score}</p>
+       <p><strong>Transit Time:</strong> ${formatTime(totalTransit)}</p>
+       <p><strong>Service Time:</strong> ${formatTime(totalService)}</p>`
+    );
   }
 }
 
@@ -103,11 +116,11 @@ function initMap() {
  * Each station circle now includes a data attribute for linking.
  */
 function renderLevel1Stations() {
-  if (!mapSvg || !projection) return;
+  if (!zoomGroup || !projection) return;
 
   const stationData = appState.stations;
 
-  const stationGroup = mapSvg.append("g")
+  const stationGroup = zoomGroup.append("g")
     .attr("class", "station-group");
 
   stationGroup.selectAll("circle.station-circle")
@@ -127,11 +140,10 @@ function renderLevel1Stations() {
         .attr("stroke", "#ffcc00")
         .attr("stroke-width", 3);
   
-      const infoHtml = `
-        <p><strong>Station: ${d.station_code}</strong></p>
-        <p>Location: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
-        <p>Total Routes: ${d.total_routes}</p>
-      `;
+      const infoHtml = 
+        `<p><strong>Station: ${d.station_code}</strong></p>
+         <p>Location: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
+         <p>Total Routes: ${d.total_routes}</p>`;
       setMapMonitorHover(infoHtml);
     })
     .on("mouseout", (event) => {
@@ -201,7 +213,7 @@ function fitMapToStationStops(width, height) {
  * Each route group includes a data attribute for linking.
  */
 function renderLevel2StationRoutes() {
-  if (!mapSvg || !projection) return;
+  if (!zoomGroup || !projection) return;
 
   const { stationStops, stationSequences, filteredStationRoutes } = appState;
 
@@ -216,7 +228,7 @@ function renderLevel2StationRoutes() {
   const filteredSequences = stationSequences.filter(s => filteredRouteIDs.has(s.route_id));
   const seqByRoute = d3.group(filteredSequences, d => d.route_id);
 
-  const routesGroup = mapSvg.append("g").attr("class", "routes-group");
+  const routesGroup = zoomGroup.append("g").attr("class", "routes-group");
 
   for (const [route_id, seqArray] of seqByRoute.entries()) {
     // Sort the sequence array by the order.
@@ -236,24 +248,22 @@ function renderLevel2StationRoutes() {
         // Dim all route groups.
         routesGroup.selectAll(".route-group").classed("dimmed", true);
         d3.select(this).classed("dimmed", false);
-        const infoHtml = `
-          <p><strong>Route ID:</strong> ${route_id}</p>
-          ${routeData ? `
-            <p>Date: ${routeData.date}</p>
-            <p>Departure: ${routeData.departure_time_utc}</p>
-            <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
-            <p>Route Score: ${routeData.route_score}</p>` : ''}
-          <p>Total Stops: ${stopsForRoute.length}</p>
-        `;
+        const infoHtml = 
+          `<p><strong>Route ID:</strong> ${route_id}</p>
+           ${routeData ? 
+             `<p>Date: ${routeData.date}</p>
+              <p>Departure: ${routeData.departure_time_utc}</p>
+              <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
+              <p>Route Score: ${routeData.route_score}</p>` : ''}
+           <p>Total Stops: ${stopsForRoute.length}</p>`;
         setMapMonitorHover(infoHtml);
       })
       .on("mouseout", function () {
         routesGroup.selectAll(".route-group").classed("dimmed", false);
-        const infoHtml = `
-          <p><strong>Station:</strong> ${appState.selectedStation}</p>
-          <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
-          <p><em>Hover over stops to see zone ID</em></p>
-        `;
+        const infoHtml = 
+          `<p><strong>Station:</strong> ${appState.selectedStation}</p>
+           <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
+           <p><em>Hover over stops to see zone ID</em></p>`;
         setMapMonitorHover("");
       })
       .on("click", () => {
@@ -289,19 +299,17 @@ function renderLevel2StationRoutes() {
       .attr("r", 3)
       .attr("fill", "#f00")
       .on("mouseover", (event, d) => {
-        const infoHtml = `
-          <p><strong>Stop ID:</strong> ${d.stop_id}</p>
-          <p>Type: ${d.type}</p>
-          <p>Zone: ${d.zone_id}</p>
-          <p>Coordinates: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
-        `;
+        const infoHtml = 
+          `<p><strong>Stop ID:</strong> ${d.stop_id}</p>
+           <p>Type: ${d.type}</p>
+           <p>Zone: ${d.zone_id}</p>
+           <p>Coordinates: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>`;
         setMapMonitorHover(infoHtml);
       })
       .on("mouseout", () => {
-        const infoHtml = `
-          <p><strong>Route ID:</strong> ${route_id}</p>
-          <p>Total Stops: ${stopsForRoute.length}</p>
-        `;
+        const infoHtml = 
+          `<p><strong>Route ID:</strong> ${route_id}</p>
+           <p>Total Stops: ${stopsForRoute.length}</p>`;
         setMapMonitorHover("");
       });
   }
@@ -333,7 +341,7 @@ function handleRouteClick(route_id) {
 }
 
 function renderLevel3Route() {
-  if (!mapSvg) return;
+  if (!zoomGroup) return;
 
   fitMapToRouteStops();
 
@@ -357,7 +365,7 @@ function renderLevel3Route() {
     return;
   }
 
-  const routeGroup = mapSvg.append("g")
+  const routeGroup = zoomGroup.append("g")
     .attr("class", "level3-route");
 
   for (let i = 0; i < orderedStops.length - 1; i++) {
@@ -387,14 +395,13 @@ function renderLevel3Route() {
       .attr("stroke", linkColor)
       .attr("stroke-width", 3)
       .on("mouseover", () => {
-        const infoHtml = `
-          <p><strong>Link Information</strong></p>
-          <p>From Stop: ${fromStop.stop_id} (Type: ${fromStop.type}, Zone: ${fromStop.zone_id})</p>
-          <p>To Stop: ${toStop.stop_id} (Type: ${toStop.type}, Zone: ${toStop.zone_id})</p>
-          <p>Travel Time (sec): ${travelTime.toFixed(2)}</p>
-          <p>Distance (km): ${dist.toFixed(2)}</p>
-          <p>Traffic Ratio (sec/km): ${ratio.toFixed(2)}</p>
-        `;
+        const infoHtml = 
+          `<p><strong>Link Information</strong></p>
+           <p>From Stop: ${fromStop.stop_id} (Type: ${fromStop.type}, Zone: ${fromStop.zone_id})</p>
+           <p>To Stop: ${toStop.stop_id} (Type: ${toStop.type}, Zone: ${toStop.zone_id})</p>
+           <p>Travel Time (sec): ${travelTime.toFixed(2)}</p>
+           <p>Distance (km): ${dist.toFixed(2)}</p>
+           <p>Traffic Ratio (sec/km): ${ratio.toFixed(2)}</p>`;
         setMapMonitorHover(infoHtml);
       })
       .on("mouseout", () => {
@@ -424,13 +431,12 @@ function renderLevel3Route() {
       const pkgs = packagesByStop.get(d.stop_id) || [];
       const avgService = d3.mean(pkgs, p => +p.planned_service_time_seconds) || 0;
       const packagePreview = pkgs.length > 0 ? pkgs.map(p => p.package_id).slice(0, 3).join(', ') : 'None';
-      const infoHtml = `
-        <p><strong>Stop ID:</strong> ${d.stop_id}</p>
-        <p>Coordinates: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
-        <p>Avg Service Time (sec): ${avgService.toFixed(2)}</p>
-        <p>Package Count: ${pkgs.length}</p>
-        ${pkgs.length > 0 ? `<p>Package IDs: ${packagePreview}${pkgs.length > 3 ? '...' : ''}</p>` : ''}
-      `;
+      const infoHtml = 
+        `<p><strong>Stop ID:</strong> ${d.stop_id}</p>
+         <p>Coordinates: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
+         <p>Avg Service Time (sec): ${avgService.toFixed(2)}</p>
+         <p>Package Count: ${pkgs.length}</p>
+         ${pkgs.length > 0 ? `<p>Package IDs: ${packagePreview}${pkgs.length > 3 ? '...' : ''}</p>` : ''}`;
       setMapMonitorHover(infoHtml);
     })
     .on("mouseout", () => {
