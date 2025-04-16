@@ -220,7 +220,7 @@ function initMap() {
 
   // Set up zoom behavior
   const zoom = d3.zoom()
-    .scaleExtent([0.5, 20])
+    .scaleExtent([0.1, 30])
     .on("zoom", (event) => {
       console.log("[DEBUG] Zoom event triggered, transform:", event.transform);
       zoomGroup.attr("transform", event.transform);
@@ -370,8 +370,7 @@ function renderLevel2StationRoutes() {
         .classed("route-highlight", false);
         const infoHtml = 
           `<p><strong>Station:</strong> ${appState.selectedStation}</p>
-           <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
-           <p><em>Hover over stops to see zone ID</em></p>`;
+           <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>`;
         setMapMonitorHover("");
       })
       .on("click", () => {
