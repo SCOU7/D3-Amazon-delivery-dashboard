@@ -118,3 +118,10 @@ html, body {
   stroke: yellow;
   stroke-width: 1px;
 }
+
+.route-group.dimmed path {
+  opacity: 0.01 !important;
+}
+.route-group.dimmed circle {
+  opacity: 0.01 !important;
+}

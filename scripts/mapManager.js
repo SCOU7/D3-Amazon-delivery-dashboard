@@ -3,54 +3,59 @@
 let mapSvg = null;
 let projection = null;
 
-/**
- * showMapMonitorInfo(htmlString):
- * Replaces the content of #mapMonitorContent in the left sidebar
- * with the provided HTML string.
- */
 function showMapMonitorInfo(htmlString) {
   d3.select("#mapMonitorContent").html(htmlString);
 }
 
-/**
- * initMap():
- * - Clears any existing SVG in #mapViewport
- * - Creates a new <svg> for the map
- * - Based on appState.currentLevel, calls the appropriate render function.
- */
 function initMap() {
   const mapContainer = d3.select("#mapViewport");
-  mapContainer.selectAll("svg").remove(); // Clear old map
+  mapContainer.selectAll("svg").remove();
 
   const width = mapContainer.node().clientWidth;
   const height = mapContainer.node().clientHeight;
 
-  // Create a new SVG
   mapSvg = mapContainer.append("svg")
     .attr("width", width)
     .attr("height", height);
 
-  // Choose projection & draw based on current level
   if (appState.currentLevel === 1) {
-    // Level 1: Nation
-    // We'll use a fixed scale & center for the continental US
     projection = d3.geoMercator()
       .scale(700)
       .translate([width / 2, height / 2])
       .center([-95, 40]);
-
     renderLevel1Stations();
-  }
-  else if (appState.currentLevel === 2) {
-    // Level 2: Station
+  } else if (appState.currentLevel === 2) {
     fitMapToStationStops(width, height);
     renderLevel2StationRoutes();
-  }
-  else if (appState.currentLevel === 3) {
-    // Level 3: Route-level
+
+    // ✅ Static info for Level 2
+    const station = appState.selectedStation;
+    const totalRoutes = appState.stationRoutes.length;
+    showMapMonitorInfo(`
+      <p><strong>Station:</strong> ${station}</p>
+      <p><strong>Total Routes:</strong> ${totalRoutes}</p>
+      <p><em>Hover over stops to see zone ID</em></p>
+    `);
+  } else if (appState.currentLevel === 3) {
     renderLevel3Route();
+
+    // ✅ Static info for Level 3
+    const routeId = appState.selectedRoute;
+    const route = appState.stationRoutes.find(r => r.route_id === routeId);
+    const stops = appState.stationStops.filter(s => s.route_id === routeId);
+    const zoneId = stops.length > 0 ? stops[0].zone_id : "Unknown";
+    const pkgCount = appState.routePackages.length;
+    const score = route ? route.route_score : "N/A";
+
+    showMapMonitorInfo(`
+      <p><strong>Route ID:</strong> ${routeId}</p>
+      <p><strong>Zone:</strong> ${zoneId}</p>
+      <p><strong>Packages:</strong> ${pkgCount}</p>
+      <p><strong>Route Score:</strong> ${score}</p>
+    `);
   }
 }
+
 
 /**
  * renderLevel1Stations():
@@ -65,7 +70,7 @@ function renderLevel1Stations() {
   const stationGroup = mapSvg.append("g")
     .attr("class", "station-group");
 
-  stationGroup.selectAll("circle.station-circle")
+    stationGroup.selectAll("circle.station-circle")
     .data(stationData)
     .enter()
     .append("circle")
@@ -77,6 +82,10 @@ function renderLevel1Stations() {
     .attr("stroke", "#333")
     .attr("stroke-width", 1)
     .on("mouseover", (event, d) => {
+      d3.select(event.currentTarget)
+        .attr("stroke", "#ffcc00")
+        .attr("stroke-width", 3);
+  
       const infoHtml = `
         <p><strong>Station: ${d.station_code}</strong></p>
         <p>Location: (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})</p>
@@ -84,12 +93,17 @@ function renderLevel1Stations() {
       `;
       showMapMonitorInfo(infoHtml);
     })
-    .on("mouseout", () => {
+    .on("mouseout", (event) => {
+      d3.select(event.currentTarget)
+        .attr("stroke", "#333")
+        .attr("stroke-width", 1);
+  
       showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
     })
     .on("click", (event, d) => {
       handleStationClick(d.station_code);
     });
+  
 }
 
 /**
@@ -204,25 +218,34 @@ function renderLevel2StationRoutes() {
     const routeData = appState.stationRoutes.find(r => r.route_id === route_id);
 
     const routeGroup = routesGroup.append("g")
-      .attr("class", "route-group")
-      .on("mouseover", () => {
-        const infoHtml = `
-          <p><strong>Route ID:</strong> ${route_id}</p>
-          ${routeData ? `
-            <p>Date: ${routeData.date}</p>
-            <p>Departure: ${routeData.departure_time_utc}</p>
-            <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
-            <p>Route Score: ${routeData.route_score}</p>` : ''}
-          <p>Total Stops: ${stopsForRoute.length}</p>
-        `;
-        showMapMonitorInfo(infoHtml);
-      })
-      .on("mouseout", () => {
-        showMapMonitorInfo("<p>Hover over a station, route, or stop to see details.</p>");
-      })
-      .on("click", () => {
-        handleRouteClick(route_id);
-      });
+  .attr("class", "route-group")
+  .on("mouseover", function () {
+    // Dim all other routes
+    routesGroup.selectAll(".route-group").classed("dimmed", true);
+    d3.select(this).classed("dimmed", false); // Undim current
+    const infoHtml = `
+      <p><strong>Route ID:</strong> ${route_id}</p>
+      ${routeData ? `
+        <p>Date: ${routeData.date}</p>
+        <p>Departure: ${routeData.departure_time_utc}</p>
+        <p>Executor Capacity: ${routeData.executor_capacity_cm3}</p>
+        <p>Route Score: ${routeData.route_score}</p>` : ''}
+      <p>Total Stops: ${stopsForRoute.length}</p>
+    `;
+    showMapMonitorInfo(infoHtml);
+  })
+  .on("mouseout", function () {
+    routesGroup.selectAll(".route-group").classed("dimmed", false);
+    const infoHtml = `
+      <p><strong>Station:</strong> ${appState.selectedStation}</p>
+      <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
+      <p><em>Hover over stops to see zone ID</em></p>
+    `;
+    showMapMonitorInfo(infoHtml);
+  })
+  .on("click", () => {
+    handleRouteClick(route_id);
+  });
 
     const lineGenerator = d3.line();
     const coords = stopsForRoute.map(s => projection([s.lng, s.lat]));
