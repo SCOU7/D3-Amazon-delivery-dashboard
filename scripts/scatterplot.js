@@ -21,13 +21,6 @@ function formatTimeShort(seconds) {
 const tooltip = d3.select("body")
   .append("div")
   .attr("class", "tooltip")
-  .style("position", "absolute")
-  .style("pointer-events", "none")
-  .style("background", "#fff")
-  .style("border", "1px solid #ccc")
-  .style("padding", "5px")
-  .style("opacity", 0)
-  .style("font-size", "12px");
 
 function renderScatterPlot() {
   const container = d3.select("#scatterPlot");
@@ -100,25 +93,22 @@ function renderScatterPlot() {
     .attr("x", width / 2)
     .attr("y", height + margin.bottom - 10)
     .attr("text-anchor", "middle")
-    .style("font-size", "12px")
     .text("Total Transit Time")
-    .style("fill", "white");
+    .attr("class", "axis-label")
   svg.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
     .attr("y", -margin.left + 15)
     .attr("text-anchor", "middle")
-    .style("font-size", "12px")
     .text("Total Service Time")
-    .style("fill", "white");
+    .attr("class", "axis-label")
   svg.append("text")
     .attr("x", width / 2)
     .attr("y", -10)
     .attr("text-anchor", "middle")
-    .style("font-size", "14px")
+    .attr("class", "plot-title")
     .style("font-weight", "bold")
     .text("Transit vs. Service Time per Route")
-    .style("fill", "white");
 
   // Data join for dots (using route_id as key).
   const dots = svg.selectAll("circle.route-dot")
@@ -130,9 +120,8 @@ function renderScatterPlot() {
     .attr("class", "route-dot")
     .attr("cx", d => xScale(d.total_transit_time_sec))
     .attr("cy", d => yScale(d.total_service_time_sec))
-    .attr("r", 0)
-    .attr("fill", "red")
-    .attr("opacity", 0.8)
+    .attr("class", "route-dot")
+    .attr("r", 0) // keep r animated
     .on("mouseover", (event, d) => {
       console.log("[scatterPlot] Mouseover on route", d.route_id, "station", d.station_code);
       tooltip.html(`

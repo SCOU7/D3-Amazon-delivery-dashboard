@@ -373,3 +373,30 @@ button:hover {
 .axis line {
   stroke: #888;
 }
+
+
+
+
+/* ========== SCATTER PLOT STYLING ========== */
+.route-dot {
+  fill: red;
+  opacity: 0.3;
+  r: 2; /* Not respected via CSS but keep for doc clarity */
+  transition: r 0.2s ease, opacity 0.2s ease;
+}
+
+.route-dot:hover {
+  opacity: 1;
+  filter: drop-shadow(0 0 3px var(--secondary-color));
+}
+
+.axis-label {
+  font-size: 12px;
+  fill: var(--text-color);
+}
+
+.plot-title {
+  font-size: 14px;
+  font-weight: bold;
+  fill: var(--text-color);
+}
