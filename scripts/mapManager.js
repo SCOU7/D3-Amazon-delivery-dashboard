@@ -1,5 +1,3 @@
-// scripts/mapManager.js
-
 function formatTime(seconds) {
   seconds = Math.round(seconds);
   const h = Math.floor(seconds / 3600);
@@ -18,7 +16,7 @@ function formatTimeShort(seconds) {
 }
 
 let mapSvg = null;
-let zoomGroup = null;  // New group to hold all zoomable map content.
+let zoomGroup = null;
 let projection = null;
 
 function setMapMonitorBase(htmlString) {
@@ -40,17 +38,11 @@ function initMap() {
     .attr("width", width)
     .attr("height", height);
 
-  // Create a dedicated group for all zoomable content.
   zoomGroup = mapSvg.append("g")
     .attr("class", "zoom-group");
 
-  // Add zoom behavior to the svg so that it transforms the zoomGroup.
-  const zoom = d3.zoom()
-    .scaleExtent([0.5, 20])
-    .on("zoom", (event) => {
-      zoomGroup.attr("transform", event.transform);
-    });
-  mapSvg.call(zoom);
+  // Add grid lines group first to ensure they are behind other elements
+  const gridGroup = zoomGroup.append("g").attr("class", "grid-lines");
 
   if (appState.currentLevel === 1) {
     projection = d3.geoMercator()
@@ -84,10 +76,8 @@ function initMap() {
     const pkgCount = appState.routePackages.length;
     const score = route ? route.route_score : "N/A";
 
-    // Compute total service time.
     const totalService = d3.sum(appState.routePackages, p => +p.planned_service_time_seconds || 0);
 
-    // Compute total transit time from travel times along the sequence.
     let totalTransit = 0;
     const travelTimes = appState.routeTravelTimes;
     const seq = appState.stationSequences
@@ -109,12 +99,87 @@ function initMap() {
        <p><strong>Service Time:</strong> ${formatTime(totalService)}</p>`
     );
   }
+
+  // Function to update grid lines
+  function updateGridLines() {
+    const transform = d3.zoomTransform(mapSvg.node());
+    const k = transform.k;
+    const tx = transform.x;
+    const ty = transform.y;
+
+    const x_min = -tx / k;
+    const x_max = (width - tx) / k;
+    const y_min = -ty / k;
+    const y_max = (height - ty) / k;
+
+    const lng_min = projection.invert([x_min, 0])[0];
+    const lng_max = projection.invert([x_max, 0])[0];
+    const lat_min = projection.invert([0, y_max])[1]; // bottom, lower latitude
+    const lat_max = projection.invert([0, y_min])[1]; // top, higher latitude
+
+    const lng_ints = d3.range(Math.ceil(lng_min), Math.floor(lng_max) + 1);
+    const lat_ints = d3.range(Math.ceil(lat_min), Math.floor(lat_max) + 1);
+
+    const verticalLines = lng_ints.map(n => ({
+      x: projection([n, 0])[0],
+      y1: -10000, // Large range to ensure spanning after zoom
+      y2: 10000
+    }));
+
+    const horizontalLines = lat_ints.map(m => ({
+      y: projection([0, m])[1],
+      x1: -10000,
+      x2: 10000
+    }));
+
+    const vLines = gridGroup.selectAll("line.vertical-grid")
+      .data(verticalLines, d => d.x);
+
+    vLines.enter()
+      .append("line")
+      .attr("class", "vertical-grid")
+      .attr("stroke", "#444")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "5,5")
+      .merge(vLines)
+      .attr("x1", d => d.x)
+      .attr("x2", d => d.x)
+      .attr("y1", d => d.y1)
+      .attr("y2", d => d.y2);
+
+    vLines.exit().remove();
+
+    const hLines = gridGroup.selectAll("line.horizontal-grid")
+      .data(horizontalLines, d => d.y);
+
+    hLines.enter()
+      .append("line")
+      .attr("class", "horizontal-grid")
+      .attr("stroke", "#444")
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "5,5")
+      .merge(hLines)
+      .attr("y1", d => d.y)
+      .attr("y2", d => d.y)
+      .attr("x1", d => d.x1)
+      .attr("x2", d => d.x2);
+
+    hLines.exit().remove();
+  }
+
+  // Set up zoom behavior
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 20])
+    .on("zoom", (event) => {
+      zoomGroup.attr("transform", event.transform);
+      updateGridLines();
+    });
+  mapSvg.call(zoom);
+
+  // Initial rendering of grid lines
+  updateGridLines();
 }
 
-/**
- * Renders the nation-level station circles.
- * Each station circle now includes a data attribute for linking.
- */
 function renderLevel1Stations() {
   if (!zoomGroup || !projection) return;
 
@@ -128,7 +193,7 @@ function renderLevel1Stations() {
     .enter()
     .append("circle")
     .attr("class", "station-circle")
-    .attr("data-station", d => d.station_code) // Added linking attribute.
+    .attr("data-station", d => d.station_code)
     .attr("cx", d => projection([d.lng, d.lat])[0])
     .attr("cy", d => projection([d.lng, d.lat])[1])
     .attr("r", d => Math.sqrt(d.total_routes) * 0.5)
@@ -158,9 +223,6 @@ function renderLevel1Stations() {
     });
 }
 
-/**
- * When a station is clicked, load its data and switch to Level 2.
- */
 function handleStationClick(stationCode) {
   clearStationData();
 
@@ -178,9 +240,6 @@ function handleStationClick(stationCode) {
   setLevel(2);
 }
 
-/**
- * Fit the map projection to the station stops.
- */
 function fitMapToStationStops(width, height) {
   const stops = appState.stationStops;
   if (!stops || stops.length === 0) {
@@ -208,22 +267,16 @@ function fitMapToStationStops(width, height) {
   projection.fitExtent([[20, 20], [width - 20, height - 20]], geojson);
 }
 
-/**
- * Renders station routes at Level 2.
- * Each route group includes a data attribute for linking.
- */
 function renderLevel2StationRoutes() {
   if (!zoomGroup || !projection) return;
 
   const { stationStops, stationSequences, filteredStationRoutes } = appState;
 
-  // Build a quick lookup dictionary for stops.
   const stopDict = {};
   for (const s of stationStops) {
     stopDict[s.route_id + "|" + s.stop_id] = s;
   }
 
-  // Group sequences by route_id using only the filtered routes.
   const filteredRouteIDs = new Set(filteredStationRoutes.map(r => r.route_id));
   const filteredSequences = stationSequences.filter(s => filteredRouteIDs.has(s.route_id));
   const seqByRoute = d3.group(filteredSequences, d => d.route_id);
@@ -231,7 +284,6 @@ function renderLevel2StationRoutes() {
   const routesGroup = zoomGroup.append("g").attr("class", "routes-group");
 
   for (const [route_id, seqArray] of seqByRoute.entries()) {
-    // Sort the sequence array by the order.
     seqArray.sort((a, b) => d3.ascending(a.sequence_order, b.sequence_order));
 
     const stopsForRoute = seqArray.map(seq => stopDict[seq.route_id + "|" + seq.stop_id])
@@ -240,12 +292,10 @@ function renderLevel2StationRoutes() {
 
     const routeData = appState.stationRoutes.find(r => r.route_id === route_id);
 
-    // Append a group for this route with a data attribute.
     const routeGroup = routesGroup.append("g")
       .attr("class", "route-group")
-      .attr("data-route-id", route_id) // Added linking attribute.
+      .attr("data-route-id", route_id)
       .on("mouseover", function () {
-        // Dim all route groups.
         routesGroup.selectAll(".route-group").classed("dimmed", true);
         d3.select(this).classed("dimmed", false);
         const infoHtml = 
@@ -319,7 +369,6 @@ function handleRouteClick(route_id) {
   clearRouteData();
   appState.selectedRoute = route_id;
 
-  // Build routeStops array.
   const routeStops = appState.stationStops.filter(s => s.route_id === route_id);
   appState.routeStops = routeStops;
 
@@ -327,7 +376,6 @@ function handleRouteClick(route_id) {
   const routePackages = allPackages.filter(p => p.route_id === route_id);
   appState.routePackages = routePackages;
 
-  // Load travel times and then switch to Level 3.
   loadRouteTravelTimes(appState.selectedStation, route_id)
     .then(travelTimes => {
       appState.routeTravelTimes = travelTimes;
