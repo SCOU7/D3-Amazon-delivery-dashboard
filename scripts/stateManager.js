@@ -32,6 +32,11 @@ function setLevel(newLevel) {
     `${newLevel} ${newLevel === 1 ? '(Nation)' :
                  newLevel === 2 ? '(Station)' :
                  '(Route)'}`;
+
+  const filterSidebar = document.getElementById("rightSidebar");
+  if (filterSidebar) {
+    filterSidebar.style.display = (newLevel === 2) ? "block" : "none";
+  }
 }
 
 function clearStationData() {

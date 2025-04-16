@@ -119,15 +119,16 @@ async function handleStationClick(stationCode) {
   appState.stationStops = stationObj.stops;
   appState.stationSequences = stationObj.sequences;
 
-  // 🆕 Automatically filter station routes immediately using active filters
-  const selectedScores = appState.filters.routeScores;
-  appState.filteredStationRoutes = stationObj.routes.filter(r =>
-    selectedScores.has(r.route_score)
-  );
+  // 🆕 Initialize filters and populate dynamic zones
+  initializeFilters(); // loads filter UI
+  populateZoneOptionsFromCurrentStation(); // populates zones from this station
+
+  // 🆕 Immediately apply filters for initial map/pie rendering
+  applyFilters();
 
   // Switch to Level 2
   setLevel(2);
-  initMap(); // re-render with filtered data
+  initMap();
 }
 
 
