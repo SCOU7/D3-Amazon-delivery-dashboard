@@ -207,38 +207,87 @@ button:hover {
   border: 1px solid #ccd;
 }
 
-/* Styling the route links drawn by mapManager.js */
-.route-group path {
+
+/*  */
+/* Sation Circles (Level 1) */
+/*  */
+.station-circle {
+  fill: steelblue;
+  stroke: #333;
+  stroke-width: 1;
   cursor: pointer;
-  opacity: 0.5;
-}
-.route-group:hover path {
-  opacity: 1.0;
-}
-.stop-point {
-  cursor: pointer;
-}
-.stop-point:hover {
-  stroke: yellow;
-  stroke-width: 1px;
+  transition: 
+    stroke 0.2s ease,
+    stroke-width 0.2s ease,
+    r 0.2s ease,
+    fill-opacity 0.2s ease;
+  r: 2.4; /* default radius */
+  fill-opacity: 1;
 }
 
-.route-group.dimmed path {
-  opacity: 0.01 !important;
-}
-.route-group.dimmed circle {
-  opacity: 0.01 !important;
+/* On hover (temporary) */
+.station-circle:hover {
+  stroke: #ffcc00;
+  stroke-width: 2;
+  r: 5; /* enlarge */
+  fill-opacity: 0.7; /* slightly dim */
 }
 
-/* Highlight for station circles (Level 1) */
+/* Persistent highlight from scatter plot interaction */
 .station-highlight {
   stroke: #ffcc00 !important;
-  stroke-width: 3 !important;
+  stroke-width: 2 !important;
+  r: 5 !important;
+  fill-opacity: 0.7 !important;
 }
 
-/* Dim effect for route groups when not highlighted */
-.dimmed {
-  opacity: 0.3;
+
+/*  */
+/* Routes (Level 2) */
+/*  */
+/* Default route path segments */
+.route-group path:first-of-type {
+  stroke: #FFB300;            /* Warm amber */
+  stroke-width: 0.5;            /* Thin */
+  opacity: 0.2;               /* Slightly dimmed default */
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+/* Link: Stop → Stop */
+.route-group path:nth-of-type(2) {
+  stroke: #90CAF9;            /* Light blue */
+  stroke-width: 0.5;            /* Thin */
+  opacity: 0.2;               /* Dim default */
+  transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.stop-point {
+  fill: #1ee954;             
+  r: 0.5;                     
+  opacity: 0.6;               
+  stroke: none;
+  transition: all 0.2s ease;
+}
+
+.route-highlight path {
+  /* stroke: #ff5900 !important; */
+  stroke-width: 0.5 !important;
+  opacity: 1 !important;
+  /* filter: drop-shadow(0 0 4px #ff5900); */
+}
+
+.route-highlight .stop-point {
+  opacity: 1 !important;
+  r: 0.5 !important;
+}
+
+.route-group.dimmed {
+  opacity: 0.05;
+}
+
+.route-group path,
+.level3-route path {
+  fill: none;
 }
 
 .x.grid line,
@@ -247,6 +296,16 @@ button:hover {
   stroke-opacity: 0.2;
   shape-rendering: crispEdges;
 }
+.vertical-grid,
+.horizontal-grid {
+  stroke: #444;
+  stroke-width: 1;
+  /* stroke-dasharray: 5, 5; */
+  stroke-dasharray: none;
+  stroke-opacity: 0.2;
+}
+
+
 .axis path,
 .axis line {
   stroke: #888;

@@ -180,9 +180,6 @@ function initMap() {
     vLines.enter()
       .append("line")
       .attr("class", "vertical-grid")
-      .attr("stroke", "#444")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "5,5")
       .merge(vLines)
       .attr("x1", d => d.x)
       .attr("x2", d => d.x)
@@ -197,9 +194,6 @@ function initMap() {
     hLines.enter()
       .append("line")
       .attr("class", "horizontal-grid")
-      .attr("stroke", "#444")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "5,5")
       .merge(hLines)
       .attr("y1", d => d.y)
       .attr("y2", d => d.y)
@@ -241,9 +235,7 @@ function renderLevel1Stations() {
     .attr("cy", d => projection([d.lng, d.lat])[1])
     // .attr("r", d => Math.sqrt(d.total_routes) * 0.5)
     .attr("r", d => Math.sqrt(d.total_routes) / Math.sqrt(d.total_routes) * 2.5)
-    .attr("fill", "steelblue")
-    .attr("stroke", "#333")
-    .attr("stroke-width", 1)
+    .attr("class", "station-circle")
     .on("mouseover", (event, d) => {
       d3.select(event.currentTarget)
         .attr("stroke", "#ffcc00")
@@ -340,8 +332,13 @@ function renderLevel2StationRoutes() {
       .attr("class", "route-group")
       .attr("data-route-id", route_id)
       .on("mouseover", function () {
-        routesGroup.selectAll(".route-group").classed("dimmed", true);
-        d3.select(this).classed("dimmed", false);
+        routesGroup.selectAll(".route-group")
+        .classed("dimmed", true)
+        .classed("route-highlight", false); // Clear old highlights
+
+        d3.select(this)
+        .classed("dimmed", false)
+        .classed("route-highlight", true); // Apply highlight on hover
         const infoHtml = 
           `<p><strong>Route ID:</strong> ${route_id}</p>
            ${routeData ? 
@@ -353,7 +350,9 @@ function renderLevel2StationRoutes() {
         setMapMonitorHover(infoHtml);
       })
       .on("mouseout", function () {
-        routesGroup.selectAll(".route-group").classed("dimmed", false);
+        routesGroup.selectAll(".route-group")
+        .classed("dimmed", false)
+        .classed("route-highlight", false);
         const infoHtml = 
           `<p><strong>Station:</strong> ${appState.selectedStation}</p>
            <p><strong>Total Routes:</strong> ${appState.stationRoutes.length}</p>
@@ -378,9 +377,7 @@ function renderLevel2StationRoutes() {
       routeGroup.append("path")
         .datum(coords.slice(1))
         .attr("d", lineGenerator)
-        .attr("fill", "none")
-        .attr("stroke", "#ccc")
-        .attr("stroke-width", 2);
+        .attr("class", "route-segment")
     }
 
     routeGroup.selectAll("circle.stop-point")
@@ -390,8 +387,6 @@ function renderLevel2StationRoutes() {
       .attr("class", "stop-point")
       .attr("cx", d => projection([d.lng, d.lat])[0])
       .attr("cy", d => projection([d.lng, d.lat])[1])
-      .attr("r", 3)
-      .attr("fill", "#f00")
       .on("mouseover", (event, d) => {
         const infoHtml = 
           `<p><strong>Stop ID:</strong> ${d.stop_id}</p>
