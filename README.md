@@ -22,9 +22,16 @@ This repository contains an **interactive visualization dashboard** that helps y
 ---
 
 ### 🏃‍♀️ Sample User‑Oriented Questions (“Tasks”)
-1. **Which routes are scored *Low* and why?**  
-2. **At what departure times do *Low‑scoring* routes most often start?**  
-3. **Which stations contain the highest share of *undelivered* packages?**
+#### 1  Which routes are scored **Low** and *why*?
+1. **Enter Station view**  
+   From the nation map (Level 1) click a mint‑green station dot to drill into Level 2.
+2. **Filter for “Low”**  
+   In the right sidebar untick **High** and **Medium**, leave **Low** checked, then press **Apply**.  
+   The sidebar’s `applyFilters()` call rebuilds `filteredStationRoutes`, so every view (map, scatter, pies) now reflects only low‑score routes.
+3. **Diagnose causes**  
+   * **Scatter plot** – look for dots far from the cluster → long transit / service times.  
+   * **Map links** – hover red‑tinted segments; the tooltip shows high *traffic‑ratio* (sec / km) suggesting congestion.  
+   * **Map nodes** – dark‑teal nodes indicate long average service times (e.g., gated apartments).
 
 ### How the Dashboard Helps   <!-- (revised) -->
 
