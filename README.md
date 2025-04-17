@@ -26,10 +26,24 @@ This repository contains an **interactive visualization dashboard** that helps y
 2. **At what departure times do *Low‑scoring* routes most often start?**  
 3. **Which stations contain the highest share of *undelivered* packages?**
 
-#### ⚙️ How the Dashboard Helps
-* **Route‑Score Filter** → tick only **Low**, click **Apply** – the scatter‑plot, pies, and map now show purely low‑scoring routes. Look for clusters or red traffic links that might explain performance issues.  
-* **Departure‑Time Pie** (Level 2) → hover any slice to see exact counts; filter further if you need just a morning or afternoon subset, then watch the scatter plot re‑cluster.  
-* **Package‑Delivery Pie** (Level 3) → instantly spot stops with undelivered packages; hover a red delivery node to inspect package IDs.
+### How the Dashboard Helps   <!-- (revised) -->
+
+* **Route‑Score Filter** – Tick/untick **High / Medium / Low**, press **Apply**.  
+  *Every view* (map, scatter, pies) is immediately regenerated from the filtered‐route set, so you can isolate problem‑routes and study their spatial or temporal patterns.
+
+* **Date‑Range Slider** – Narrow the two sliders to focus on a specific window (e.g. a holiday week).  
+  The pies summarise only routes inside the chosen dates, and the scatter plot re‑clusters accordingly.
+
+* **Zone‑ID Selector** – Multiselect any delivery zones (Level 2 only).  
+  Great for comparing urban vs suburban sub‑areas within the same station.
+
+* **Departure‑Time Pie (Level 2)** – Read‑only but dynamic.  
+  It automatically re‑computes for whatever routes survive the filters; hovering a slice reveals exact counts/percentages.
+
+* **Package‑Delivery Pie (Level 3)** – Shows “Delivered” (green) vs “Other” (red/orange) for the currently selected route.  
+  The map’s **link colours** (green → yellow → red) visualise traffic slow‑downs, while **node colours** encode average service time at each stop; hover any link or node to see rich stop/segment details.
+
+* **Cross‑Highlighting** – Hover a scatter dot and its route (Level 2) or station (Level 1) lights up on the map, and vice‑versa, helping you correlate spatial and temporal outliers quickly.
 
 ---
 
