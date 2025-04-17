@@ -89,8 +89,11 @@ function initMap() {
 
   zoomGroup = mapSvg.append('g').attr('class', 'zoom-group');
 
-  /* — choose projection once, before anything is drawn — */
+  setMapMonitorHover("");   
+  /* — choose projection once, before */
+
   if (appState.currentLevel === 1) {
+    setMapMonitorBase("");
     projection = d3
       .geoMercator()
       .scale(700)
