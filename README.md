@@ -1,3 +1,5 @@
+![Amazon Last‑Mile Dashboard Preview](figure1.png)
+
 ### Amazon Last‑Mile Delivery Dashboard ― README
 > *Interactive visual analytics for the 2021 Amazon Last‑Mile Routing Research Challenge*  
 
