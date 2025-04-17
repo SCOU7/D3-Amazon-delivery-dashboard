@@ -2,47 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Amazon Last Mile Dashboard - Milestone #2 with Real Data</title>
+  <title>Amazon Last‑Mile Dashboard – Milestone #2 (Real Data)</title>
+
+  <!-- Styles & libraries -->
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
+
 <body>
-  <!-- Top 25%: Monitor Container -->
-  <div id="monitorContainer">
-    <div id="pieChartsContainer">
-      <div id="pieChartLevel1" class="pie-chart-placeholder">
-        
-      </div>
-      <div id="pieChartLevel2" class="pie-chart-placeholder">
-      </div>
-      <div id="pieChartLevel3" class="pie-chart-placeholder">
-      </div>
+  <!-- ───────────────────────── Landing overlay ───────────────────────── -->
+  <div id="landingPage" class="landing-overlay">
+    <div class="landing-card">
+      <h1>
+        <span class="dash-logo">📦</span>
+        Amazon Last‑Mile Delivery Dashboard
+      </h1>
+  
+      <p class="intro">
+        Explore real U.S. last‑mile delivery operations— 5,000+ routes, 50,000+
+        stops, and over one million packages from 17 Amazon Delivery Stations.
+        Drill down seamlessly from <strong>Nation ▶ Station ▶ Route</strong>,
+        filter by score, date, or zone, and uncover actionable insights.
+      </p>
+  
+      <ul class="tips">
+        <li class="highlight-tip"><span class="tip-icon">🖱️</span>
+            Hover a route dot in the scatter plot — its station (Level 1) or the route itself (Level 2) lights up.</li>
+      
+        <li class="highlight-tip"><span class="tip-icon">🗺️</span>
+            <strong>You can do the same hover / click interaction directly on the map—give it a try!</strong></li>
+      
+        <li class="highlight-tip"><span class="tip-icon">🔍</span>
+            Use the right‑hand filter to focus on scores, dates, or delivery zones.</li>
+      </ul>
+      
+  
+      <p id="loadingStatus" class="status">Loading data…</p>
+      <button id="discoverButton" class="discover-btn" disabled>Discover</button>
     </div>
-    <div id="scatterPlot" class="scatter-plot-placeholder">
-    </div>
-    <button id="switchAxesButton">Switch Axes</button>
   </div>
 
-  <!-- Bottom 75%: Map Container -->
-  <div id="mapContainer">
-    <div id="leftSidebar" class="sidebar">
-      <div id="mapLevelIndicator">
-        <h3>Current Level: <span id="currentLevelLabel">Loading...</span></h3>
-        <button id="backButton">Back</button>
+  <!-- ───────────────────────── Main app (initially hidden) ───────────────────────── -->
+  <div id="appRoot" style="display:none;">
+    <!-- Top 30 % – monitor (pies + scatter) -->
+    <div id="monitorContainer">
+      <div id="pieChartsContainer">
+        <div id="pieChartLevel1" class="pie-chart-placeholder"></div>
+        <div id="pieChartLevel2" class="pie-chart-placeholder"></div>
+        <div id="pieChartLevel3" class="pie-chart-placeholder"></div>
       </div>
-      <h3>Map Monitor</h3>
-      <div id="mapMonitorContent">
-        <div id="mapMonitorBase"></div>
-        <div id="mapMonitorHover" style="margin-top: 8px;"></div>
+
+      <div id="scatterPlot" class="scatter-plot-placeholder"></div>
+      <button id="switchAxesButton">Switch Axes</button>
+    </div>
+
+    <!-- Bottom 70 % – map & sidebars -->
+    <div id="mapContainer">
+      <div id="leftSidebar" class="sidebar">
+        <div id="mapLevelIndicator">
+          <h3>Current Level: <span id="currentLevelLabel"></span></h3>
+          <button id="backButton">Back</button>
+        </div>
+
+        <h3>Map Monitor</h3>
+        <div id="mapMonitorContent">
+          <div id="mapMonitorBase"></div>
+          <div id="mapMonitorHover" style="margin-top:8px;"></div>
+        </div>
       </div>
-    </div>
-    <div id="mapViewport">
-    </div>
-    <div id="rightSidebar" class="sidebar">
-      <h3>Filter</h3>
-    </div>
-  </div>
+
+      <div id="mapViewport"></div>
+
+      <div id="rightSidebar" class="sidebar">
+        <h3>Filter</h3>
+      </div>
+    </div><!-- /#mapContainer -->
+  </div><!-- /#appRoot -->
 
   <script type="module" src="scripts/main.js"></script>
 </body>
