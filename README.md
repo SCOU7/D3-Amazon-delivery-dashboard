@@ -1,215 +1,133 @@
-# Amazon Last‑Mile Delivery Dashboard
-
-<https://scou7.github.io/D3‑Amazon‑delivery‑dashboard/>
-
----
-
-### 1 · Project Type  
-Interactive data‑visualization dashboard (static, front‑end only).
-
-### 2 · Purpose  
-Provides rapid visual insight into the **2021 Amazon Last‑Mile Routing Research Challenge** data set ‑– 6 112 routes, 50 000+ stops and 1 M+ packages across 17 U.S. delivery stations.
-
-### 3 · Tech Stack  
-Plain **HTML + CSS + ES‑module JavaScript** using **D3 v7**.  
-No back‑end; all data (~2.62 GB) is served directly from GitHub Pages. A fresh `git clone` takes <30 s on a typical broadband connection.
-
-### 4 · Data Set in Brief  
-A *route* originates at a **Station**, drives to the first drop‑off, then proceeds stop‑to‑stop delivering packages. Each route is unique by *(station code ⊕ date ⊕ departure time)*. Stations span four metropolitan areas (Dallas, Denver, Chicago, Seattle).
-
-### 5 · Sample User Tasks (three examples)
-
-| # | Business Question | Dashboard How‑To |
-|---|-------------------|------------------|
-| 1 | **Which routes are scored “Low” and why?** | In *Level 2* (Station View) toggle **Filter ▸ Route Score ▸ Low**, click **Apply**. Examine scatter‑plot clustering and map traces. Red map links mark segments with high traffic ratio—often the culprit behind low scores. |
-| 2 | **What departure windows lead to prolonged *service* time?** | In *Level 1* switch scatter‑plot axes if needed (**Transit ⇄ Service**). Hover the **Departure‑Time** pie: slices update dynamically. Note which time‑of‑day sectors dominate the upper‑right scatter quadrant. |
-| 3 | **Are certain delivery *zones* chronically delayed?** | Drill to a station, open the **Zone ID** multi‑select, choose suspicious zones, and apply. Routes and pies re‑aggregate; long red links or deep‑green nodes (long service) signal recurring issues. |
-
-### 6 · Suggested Exploration Path
-
-1. **Welcome screen** → click **Discover** when data shows *Ready*.  
-2. **Nation View** (Level 1)  
-   * Pies reveal national patterns (score mix, departure windows, delivery success ≥ 99 %).  
-   * Hover scatter dots to see which station a route belongs to – matching mint station circles illuminate.  
-3. **Station View** (Level 2)  
-   * Click a station circle or scatter dot → zooms to that station.  
-   * Yellow links = long “first‑leg” drive from station to first stop.  
-   * Use the right‑hand **Filter** (score / date / zone) to focus the analysis; pies, scatter and map update in unison.  
-4. **Route View** (Level 3)  
-   * Select an interesting route.  
-   * **Red route segments** denote legs with a high *traffic‑to‑distance ratio* (≥ 600 s / km) – likely congestion or circuitous routing.  
-   * Node fill shade encodes average *planned service time* at the stop.  
-5. Iterate, hypothesise, and uncover operational insights.
+### Amazon Last‑Mile Delivery Dashboard ― README
+> *Interactive visual analytics for the 2021 Amazon Last‑Mile Routing Research Challenge*  
 
 ---
 
-## In‑Depth Technical Reference  *(for developers & data scientists)*
+#### 📍 Live Demo  
+The project is hosted online via **GitHub Pages** at  
+<https://scou7.github.io/D3-Amazon-delivery-dashboard/>
 
-### Contents
-1. [Quick Start](#quick-start)  
-2. [Repository Layout](#repository-layout)  
-3. [Data Preparation Pipeline](#data-preparation-pipeline)  
-4. [Runtime Architecture](#runtime-architecture)  
-5. [State Management](#state-management)  
-6. [Visual Layers](#visual-layers)  
-7. [Interactivity & Event Flow](#interactivity--event-flow)  
-8. [Performance Notes](#performance-notes)  
-9. [Styling System](#styling-system)  
-10. [Extending the Dashboard](#extending-the-dashboard)  
-11. [Contributing](#contributing)  
-12. [License](#license)
+#### 🎯 What is this?  
+This repository contains an **interactive visualization dashboard** that helps you explore the **2021 Amazon Last‑Mile Routing Research Challenge Data Set**.
+
+* **Pure front‑end stack:** `HTML + CSS + JavaScript (ES Modules) + D3 v7`  
+* **No back‑end:** the entire ~2.62 GB data set (6 112 routes) is committed to GitHub; a fresh `git clone` completes in under 30 seconds on a fast connection.  
+* **Scope of the data:**  
+  * 17 Delivery Stations in 4 U.S. metropolitan areas  
+  * 6 112 routes • 50 k+ stops • 1 m+ packages  
+  * Each route starts at a station, makes an initial **transit** drive to its first drop‑off, then proceeds **stop → stop** while servicing packages.
 
 ---
 
-### Quick Start
+### 🏃‍♀️ Sample User‑Oriented Questions (“Tasks”)
+1. **Which routes are scored *Low* and why?**  
+2. **At what departure times do *Low‑scoring* routes most often start?**  
+3. **Which stations contain the highest share of *undelivered* packages?**
 
+#### ⚙️ How the Dashboard Helps
+* **Route‑Score Filter** → tick only **Low**, click **Apply** – the scatter‑plot, pies, and map now show purely low‑scoring routes. Look for clusters or red traffic links that might explain performance issues.  
+* **Departure‑Time Pie** (Level 2) → hover any slice to see exact counts; filter further if you need just a morning or afternoon subset, then watch the scatter plot re‑cluster.  
+* **Package‑Delivery Pie** (Level 3) → instantly spot stops with undelivered packages; hover a red delivery node to inspect package IDs.
+
+---
+
+### 🚀 Suggested Exploration Path
+1. **Welcome screen** – press **Discover** once the green pulse appears.  
+2. **Nation level (Level 1)**  
+   * Three pies summarise *Route Score*, *Departure Time*, and *Delivered vs Other* across the USA.  
+   * The scatter plot shows one dot per route (x = *Transit Time*, y = *Service Time*). Hover a dot: the corresponding station on the map lights up.  
+3. **Drill to a Station (Level 2)** – click a mint‑green station dot; wait ~1 s for data.  
+   * Yellow links = initial **station → first stop** transits.  
+   * Blue links = intra‑route stop hops.  
+   * The **right‑hand filter panel** is now active – slice by score, date, or delivery zones; all three views update in sync.  
+4. **Inspect a Route (Level 3)** – click a route in the scatter plot *or* on the map.  
+   * The path is re‑projected; every link is coloured **green → yellow → red** by *traffic ratio* (seconds per km).  
+   * **Red segments mean the vehicle moved unusually slowly given the distance – likely congestion or long waits.**  
+   * Nodes are shaded by average planned service time; hover to see stop‑level package details.  
+5. **Iterate** – use **Back** to climb up the hierarchy and explore further combinations.
+
+---
+
+## 2. Developer & Power‑User Reference  (“The Long Part 📚”)
+
+> Everything below is intentionally exhaustive – treat it as an internal wiki.
+
+### 📂 Repository Layout
+```
+├── index.html
+├── styles.css
+└── scripts/
+    ├── main.js            # entry; bootstraps preload & UI
+    ├── stateManager.js    # single source of truth (currentLevel, filters…)
+    ├── dataLoader.js      # lazy & bulk CSV / GeoJSON loading
+    ├── mapManager.js      # Level‑specific map rendering, D3‑zoom, gridlines
+    ├── scatterPlot.js     # transit‑vs‑service scatter, axis‑switching
+    ├── pieCharts.js       # three responsive pies with live tool‑tips
+    └── filterManager.js   # sidebar filters, tag summary, re‑render orchestration
+```
+
+### 🛠️ Build / Run
+No build step is required.  
 ```bash
-# 1 · Clone (shallow for speed)
-git clone --depth=1 https://github.com/scou7/D3-Amazon-delivery-dashboard.git
+git clone https://github.com/scou7/D3-Amazon-delivery-dashboard.git
 cd D3-Amazon-delivery-dashboard
-
-# 2 · Serve locally (Python 3.x)
-python -m http.server 8000
-# open http://localhost:8000 in your browser
+python3 -m http.server 8000   # or any static server
+# open http://localhost:8000 in a modern browser
 ```
+All scripts use `type="module"` so you must serve files over HTTP (S); direct `file://` will violate CORS.
 
-> **Tip:** All paths are relative; any static HTTP server works.
+### ⚖️ Data Pre‑Processing (offline)
+* **`processed_data/<STATION>/routes.csv`** – direct subset of the challenge CSV.  
+* **`route_time_metrics.csv`** – pre‑computed with Python to avoid 6 k × 50 k inner joins in‑browser:  
+  ```sql
+  total_service_time_sec = Σ(planned_service_time_seconds) per route
+  total_transit_time_sec = Σ(travel_time[i→i+1]) per route
+  ```
+* **`borders.json`** – TopoJSON converted to GeoJSON (US counties, 1:5 m).  
+* **Travel‑time matrices** – one CSV per route, tiny (< 50 kB each).
 
----
+### 🖼️ Rendering Pipeline
+1. **`preloadAllData()`** (async)  
+   * Loads *station‑aggregates* for Level 1 and full station blobs for deeper levels.  
+   * Attaches metrics to route objects → constant‑time access during interactions.  
+2. **`setLevel()`** (finite‑state controller)  
+   * Shows / hides filter panel, updates label, and calls the triad:  
+     `renderScatterPlot()` • `updatePieCharts()` • `initMap()`.  
+3. **Map internals** (`mapManager.js`)  
+   * Unified “zoom‑group” pattern; projection chosen by `fitMapTo*()` helpers.  
+   * Adaptive **lat/long grid** refreshes in `zoom` event for crisp cartography.  
+4. **Interactive co‑brushing**  
+   * Hover a scatter dot → station or route emphasised on the map via CSS classes.  
+   * Hover a map path → complementary highlight plus info panel (`mapMonitorHover`).  
+   * All events are *pure UI*; underlying data arrays remain immutable.
 
-### Repository Layout
+### 🧮 Colour Logic
+| Visual            | Scale / Palette | Semantics                                  |
+|-------------------|-----------------|--------------------------------------------|
+| Route links (L3)  | `trafficColorScale` green → yellow → red | High speed → congestion |
+| Stop nodes (L3)   | `serviceColorScale` teal gradient       | Avg. planned service time |
+| Scatter dots      | Fixed warm red, opacity 0.6             | One per route             |
+| Pies              | Discrete dictionaries (cf. `pieCharts.js`) | Route Score / Delivered status / Departure time |
 
-```
-.
-├── processed_data/              # Pre‑curated CSV & GeoJSON (2.6 GB, not tracked by Git LFS)
-│   └── <STATION>/               # 17 stations × {routes,stops,packages,travel_times}
-├── scripts/
-│   ├── main.js                  # App boot‑strapper
-│   ├── stateManager.js          # Centralised reactive store & level routing
-│   ├── dataLoader.js            # Lazy + bulk loaders, metrics join
-│   ├── pieCharts.js             # Three linked pies
-│   ├── scatterPlot.js           # Fixed‑axis scatter with hover/selection
-│   ├── mapManager.js            # Level‑aware map (D3 Geo + Zoom + Grid)
-│   └── filterManager.js         # Right sidebar UI, declarative filters
-├── styles.css                   # Single‑source design system
-└── index.html                   # Minimal spa shell
-```
+### 📈 Performance Notes
+* **Lazy SVG updates** – pie charts and scatter plot diff data joins, not full re‑draws.  
+* **Map paths** – only segments *in view* (station / route) are inserted into DOM.  
+* **D3 zoom** scale extent `[0.1, 30]`; grid line generation tuned to avoid thousands of paths.
 
----
+### 🔑 Key Design Decisions
+* **Single‑page, no frameworks** – reduces bundle size and keeps the learning curve low.  
+* **ES Modules** – explicit dependencies, effortless tree‑shaking if you ever bundle.  
+* **Minimal CSS variables** – dark palette centralised in `:root`, easy theming.  
+* **Three‑level hierarchy** – mirrors the mental model Delivery Station → Route → Stop.
 
-### Data‑Preparation Pipeline
-
-| Stage | Script / Notebook | Output | Purpose |
-|-------|-------------------|--------|---------|
-| **1. Raw CSV merge** | `prep/merge_raw.py` | `stage1_routes_full.csv` | Collate 6 112 route manifests from challenge zip bundles. |
-| **2. Service / Transit metrics** | `prep/compute_times.py` | `route_time_metrics.csv` | Vectorised NumPy pass calculating `total_service_time_sec` and `total_transit_time_sec`; joined during client load. |
-| **3. Geo Boundary simplification** | `prep/simplify_borders.py` (TopoJSON) | `borders.json` | 1:5 000 county borders simplified to 1:20 000, preserving topology for smooth zoom. |
-| **4. Packaging** | Bash | `processed_data/*` | Station‑partitioned folders—Browser requests remain < 5 MB per station. |
-
-All preprocessing is reproducible; see `/prep/README.md` for exact commands and SHA‑256 checksums.
-
----
-
-### Runtime Architecture
-
-```
-index.html
-  └─▶ main.js
-        ├─ preloadAllData()  ← (Promise.all station fetches, joins metrics)
-        ├─ stateManager.js   ← global reactive store
-        ├─ initMap()         ← mapManager.js (Level‑aware)
-        ├─ renderScatterPlot()
-        └─ updatePieCharts()
-
-Event bus: DOM events → stateManager.setLevel() → individual modules re‑render.
-```
-
-* **Levels**:  
-  *L1 Nation* → *L2 Station* → *L3 Route* (forward) / *Back* (inverse).  
-  Each transition is pure: no mutations outside the `appState` reducer.
+### 🛡️ Limitations & Future Work
+* Browser RAM must hold ~100 MB once Level 3 is loaded for the largest routes.  
+* Travel‑time matrices are fetched on‑demand; a background *IndexedDB* cache could eliminate re‑downloads.  
+* Package‑level **actual scan timestamps** (not in the public data) would unlock delay root‑cause analysis.
 
 ---
 
-### State Management
+#### © 2025 Taehwan Park  
+Licensed under the MIT License – see `LICENSE`.  
 
-| Key                        | Type / Example                        | Mutated by                         |
-|----------------------------|---------------------------------------|------------------------------------|
-| `currentLevel`            | `1 | 2 | 3`                           | `setLevel()`                       |
-| `stations`                | `[ {station_code, lat, lng, …} ]`     | `preloadAllData()`                 |
-| `filters`                 | `{ routeScores, dateRange, … }`       | `filterManager.applyFilters()`     |
-| `scatterAxes`             | `{ x, y }`                            | *Switch Axes* button               |
-| `routeTravelTimes`        | `{ stopA: {stopB: sec,…}, … }`        | `loadRouteTravelTimes()`           |
-
-All UI modules read from—never write to—`appState` (unidirectional flow).
-
----
-
-### Visual Layers
-
-1. **Pie Charts** (`pieCharts.js`)  
-   * D3 *enter‑update‑exit* with a 750 ms tween; titles fade when empty.  
-2. **Scatter Plot** (`scatterPlot.js`)  
-   * Fixed axes (linear) with half‑hour ticks; points bind tooltip + map highlight callbacks.  
-3. **Map** (`mapManager.js`)  
-   * Projection switches: *mercator (nation)* or `fitExtent()` (station / route).  
-   * Grid lines redraw on every `zoom` transform; county borders in a static background `g`.  
-   * Level‑specific draw routines ensuring minimal DOM churn: SVG groups created once per level and discarded on `initMap()`.
-
----
-
-### Interactivity & Event Flow
-
-| Interaction | From | To | Result |
-|-------------|------|----|--------|
-| Hover scatter dot (L1) | `.route-dot` | `.station-circle` | Station pulse highlight. |
-| Click station circle | `.station-circle` | `stateManager.setLevel(2)` | Drill‑down to Station View. |
-| Change filter | Sidebar widgets | `applyFilters()` | Pies, scatter, map all re‑query derived data and animate diff. |
-| Click route segment | `.route-group path` | `handleRouteClick()` | Loads travel‑time CSV ➜ Route View. |
-
-All hover → map monitor messages rendered via `buildMonitorRows()` for consistent styling.
-
----
-
-### Performance Notes
-
-* **Data laziness**   Route‑level travel‑time matrices (~200 kB each) load **on‑demand** at Route View only.  
-* **DOM footprint**   SVG elements are scoped to `<g class="zoom‑group">`; clearing the SVG between levels prevents orphan nodes.  
-* **Zoom**            `d3.zoom().scaleExtent([0.1, 30])` with inverse‑transform math for grid tick generation—keeps grid crisp at any scale.  
-* **CSS strictness**  Heavy use of `will‑change: transform` avoided; GPU overdraw negligible (< 2 % on a 4‑K monitor).
-
----
-
-### Styling System
-
-* Centralised **CSS variables** (`:root`) for palette; dark UI adheres to WCAG AA contrast.  
-* Re‑usable *card* pattern for tooltips and map monitor; soft shadows at 35 % opacity.  
-* Interactive elements (routes, nodes) animate via pure CSS `transition`, avoiding JS layout thrashing.
-
----
-
-### Extending the Dashboard
-
-| Goal | Where to Start |
-|------|----------------|
-| Add line‑haul CO₂ estimates | Append `co2_est_kg` to `route_time_metrics.csv`; update pie #1 aggregation helper. |
-| Swap map projection (e.g., *Albers USA*) | `mapManager.js ▸ choose projection` block. |
-| Plug‑in new filters (vehicle type) | `filterManager.js ▸ initializeFilters()` then extend `applyFilters()` predicate. |
-| Localise UI text | Extract literals to `/i18n/en.json`; wrap renders with a tiny lookup helper. |
-
----
-
-### Contributing
-
-1. **Fork / feature branch / PR**; commit messages in *conventional‑commits* style.  
-2. Run `npm run lint` (ESLint + Prettier) before pushing.  
-3. Large data additions → use Git LFS and update `/prep` docs.
-
----
-
-### License
-
-MIT — see [`LICENSE`](LICENSE) for details. Amazon challenge data licensed as per original competition terms (non‑commercial research & educational use only).
-
----
-
-*Crafted with meticulous care and a touch of operational curiosity.*
+Feel free to open issues or pull requests for improvements!
